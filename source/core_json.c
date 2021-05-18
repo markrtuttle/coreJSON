@@ -34,11 +34,13 @@
 /** @cond DO_NOT_DOCUMENT */
 
 /* A compromise to satisfy both MISRA and CBMC */
+#if 0
 typedef union
 {
     char c;
     uint8_t u;
 } char_;
+#endif
 
 #if ( CHAR_MIN == 0 )
     #define isascii_( x )    ( ( x ) <= '\x7F' )
@@ -70,12 +72,24 @@ typedef union
 static void skipSpace( const char * buf,
                        size_t * start,
                        size_t max )
+/*@
+requires
+  buf != NULL &*& chars(buf, max, _) &*&
+  start != NULL &*& integer_(start, sizeof(size_t), false, ?v) &*& 0 <= v &*& v <= max &*&
+  max > 0;
+@*/
+/*@
+ensures
+  integer_(start, sizeof(size_t), false, _) &*&
+  chars(buf, max, _);
+  @*/
 {
     size_t i;
 
     assert( ( buf != NULL ) && ( start != NULL ) && ( max > 0U ) );
 
     for( i = *start; i < max; i++ )
+    //@ invariant chars(buf, max, _) &*& 0 <= i &*& i <= max;
     {
         if( !isspace_( buf[ i ] ) )
         {
@@ -621,6 +635,8 @@ static bool skipLiteral( const char * buf,
     return ret;
 }
 
+#if 0
+
 /**
  * @brief Advance buffer index beyond a JSON literal.
  *
@@ -631,14 +647,13 @@ static bool skipLiteral( const char * buf,
  * @return true if a valid literal was present;
  * false otherwise.
  */
+#define skipLit_( x )     ( skipLiteral( buf, start, max, ( x ), ( sizeof( x ) - 1UL ) ) == true )
+
 static bool skipAnyLiteral( const char * buf,
                             size_t * start,
                             size_t max )
 {
     bool ret = false;
-
-#define skipLit_( x ) \
-    ( skipLiteral( buf, start, max, ( x ), ( sizeof( x ) - 1UL ) ) == true )
 
     if( skipLit_( "true" ) || skipLit_( "false" ) || skipLit_( "null" ) )
     {
@@ -647,6 +662,8 @@ static bool skipAnyLiteral( const char * buf,
 
     return ret;
 }
+
+#endif
 
 /**
  * @brief Advance buffer index beyond one or more digits.
