@@ -33,6 +33,30 @@
 
 /** @cond DO_NOT_DOCUMENT */
 
+/*@
+lemma void add_subbuffer(char *buffer, int offset, int length);
+requires
+  chars(buffer, ?buffer_len, ?buffer_val)
+  &*& 0 <= offset &*& offset <= buffer_len
+  &*& 0 <= length &*& length <= buffer_len - offset
+  ;
+ensures
+  chars(buffer, buffer_len, buffer_val)
+  &*& chars(buffer+offset, length, take(length, drop(offset, buffer_val)))
+  ;
+
+lemma void del_subbuffer(char *buffer, int offset, int length);
+requires
+  chars(buffer, ?buffer_len, ?buffer_val)
+  &*& chars(buffer+offset, _, _)
+  &*& 0 <= offset
+  &*& offset <= buffer_len
+  ;
+ensures
+  chars(buffer, buffer_len, buffer_val)
+  ;
+@*/
+
 /* A compromise to satisfy both MISRA and CBMC */
 #if 0
 typedef union
@@ -72,16 +96,16 @@ typedef union
 static void skipSpace( const char * buf,
                        size_t * start,
                        size_t max )
-/*@
-requires
-  buf != NULL &*& chars(buf, max, ?buf_val) &*&
-  start !=NULL &*& integer_(start, sizeof(size_t), false, ?start_val0) &*& 0 <= start_val0 &*& start_val0 <= max &*&
+/*@ requires
+  chars(buf, max, ?buf_val) &*& buf != NULL &*&
+  integer_(start, sizeof(size_t), false, ?start_val0) &*& start !=NULL &*&
+    0 <= start_val0 &*& start_val0 <= max &*&
   max > 0;
-@*/
-/*@
-ensures
-  integer_(start, sizeof(size_t), false, ?start_val1) &*& 0 <= start_val1 &*& start_val1 <= max &*&
-  chars(buf, max, buf_val);
+  @*/
+/*@ ensures
+  chars(buf, max, buf_val) &*&
+  integer_(start, sizeof(size_t), false, ?start_val1) &*&
+    0 <= start_val1 &*& start_val1 <= max;
   @*/
 {
     size_t i;
@@ -582,16 +606,14 @@ static bool skipString( const char * buf,
 static bool strnEq( const char * a,
                     const char * b,
                     size_t n )
-/*@
-requires
-  a != NULL &*& chars(a, n, ?a_val) &*&
-  b != NULL &*& chars(b, n, ?b_val);
-@*/
-/*@
-ensures
+/*@ requires
+  chars(a, n, ?a_val) &*& a != NULL &*&
+  chars(b, n, ?b_val) &*& b != NULL;
+  @*/
+/*@ ensures
   chars(a, n, a_val) &*&
   chars(b, n, b_val);
-@*/
+  @*/
 {
     size_t i;
 
@@ -626,21 +648,17 @@ static bool skipLiteral( const char * buf,
                          size_t max,
                          const char * literal,
                          size_t length )
-//  chars(buf + v, length, _);
-/*@
-requires
-  buf != NULL &*& chars(buf, max, ?buf_val) &*&
-  start != NULL &*& integer_(start, sizeof(size_t), false, ?v) &*& 0 <= v &*& v <= max &*&
+/*@ requires
+  chars(buf, max, ?buf_val) &*& buf != NULL &*&
+  integer_(start, sizeof(size_t), false, ?v) &*& start != NULL &*&
+    0 <= v &*& v <= max &*&
   max > 0 &*&
-  literal != NULL &*& chars(literal, length, ?literal_val) &*&
-  chars(buf + v, length, ?chars);
-@*/
-/*@
-ensures
-  integer_(start, sizeof(size_t), false, _) &*&
+  literal != NULL &*& chars(literal, length, ?literal_val);
+  @*/
+/*@ ensures
   chars(buf, max, buf_val) &*&
-  chars(literal, length, literal_val) &*&
-  chars(buf + v, length, chars);
+  integer_(start, sizeof(size_t), false, ?w) &*& v <= w &*& w <= max &*&
+  chars(literal, length, literal_val);
   @*/
 {
     bool ret = false;
@@ -650,7 +668,9 @@ ensures
 
     if( ( *start < max ) && ( length <= ( max - *start ) ) )
     {
+        //@ add_subbuffer(buf, *start, length);
         ret = strnEq( &buf[ *start ], literal, length );
+        //@ del_subbuffer(buf, *start, length);
     }
 
     if( ret == true )
@@ -673,42 +693,45 @@ ensures
  */
 #define skipLit_( x )     ( skipLiteral( buf, start, max, ( x ), ( sizeof( x ) - 1UL ) ) == true )
 
-#if 0
 static bool skipAnyLiteral( const char * buf,
                             size_t * start,
                             size_t max )
-/*@
-requires
-  buf != NULL &*& chars(buf, max, ?buf_val) &*&
-  start != NULL &*& integer_(start, sizeof(size_t), false, ?start_val0) &*& 0 <= start_val0 &*& start_val0 <= max &*&
+/*@ requires
+  chars(buf, max, ?buf_val) &*& buf != NULL &*&
+  integer_(start, sizeof(size_t), false, ?start_val0) &*& start != NULL &*&
+    0 <= start_val0 &*& start_val0 <= max &*&
   max > 0;
-@*/
-/*@
-ensures
+  @*/
+/*@ ensures
   chars(buf, max, buf_val) &*&
-  start != NULL &*& integer_(start, sizeof(size_t), false, ?start_val1) &*& 0 <= start_val1 &*& start_val1 <= max;
+  integer_(start, sizeof(size_t), false, ?start_val1) &*&
+    0 <= start_val1 &*& start_val1 <= max;
 @*/
 {
     bool ret = false;
 
 //  if( skipLit_( "true" ) || skipLit_( "false" ) || skipLit_( "null" ) )
-#if 0
-    if( skipLiteral( buf, start, max, ( "true" ), ( 4 ) ) == true
-        || skipLiteral( buf, start, max, ( "false" ), ( 5 ) ) == true
-        || skipLiteral( buf, start, max, ( "null" ), ( 4 ) ) == true
-      )
-#endif
-      char true_literal[5] = "true";
-      char *true_ptr = true_literal;
-      //@ assume(true_ptr != 0);
-    if( skipLiteral( buf, start, max, true_ptr, ( 4 ) ) == true)
+    char true_literal[5] = "true";
+    char false_literal[6] = "false";
+    char null_literal[5] = "null";
+
+    char *true_ptr = true_literal;
+    char *false_ptr = false_literal;
+    char *null_ptr = null_literal;
+
+    //@ assume(true_ptr != 0);
+    //@ assume(false_ptr != 0);
+    //@ assume(null_ptr != 0);
+
+    if( skipLiteral( buf, start, max, true_ptr, ( 4 ) ) == true ||
+        skipLiteral( buf, start, max, false_ptr, ( 5 ) ) == true ||
+        skipLiteral( buf, start, max, null_ptr, ( 4 ) ) == true )
     {
         ret = true;
     }
 
     return ret;
 }
-#endif
 
 /**
  * @brief Advance buffer index beyond one or more digits.
@@ -935,17 +958,16 @@ static bool skipAnyScalar( const char * buf,
 static bool skipSpaceAndComma( const char * buf,
                                size_t * start,
                                size_t max )
-/*@
-requires
-    buf != NULL &*& chars(buf, max, ?buffer) &*&
-    start != NULL &*& integer_(start, sizeof(size_t), false, ?v) &*& 0 <= v &*& v <= max &*&
-    max > 0;
-@*/
-/*@
-ensures
-    integer_(start, sizeof(size_t), false, _) &*&
-    chars(buf, max, buffer);
-@*/
+/*@ requires
+  chars(buf, max, ?buffer) &*& buf != NULL &*&
+  integer_(start, sizeof(size_t), false, ?v) &*& start != NULL &*&
+    0 <= v &*& v <= max &*&
+  max > 0;
+  @*/
+/*@ ensures
+  integer_(start, sizeof(size_t), false, _) &*&
+  chars(buf, max, buffer);
+  @*/
 {
     bool ret = false;
     size_t i;
