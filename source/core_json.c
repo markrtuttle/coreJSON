@@ -74,22 +74,21 @@ static void skipSpace( const char * buf,
                        size_t max )
 /*@
 requires
-  buf != NULL &*& chars(buf, max, _) &*&
-  start != NULL &*& integer_(start, sizeof(size_t), false, ?v) &*& 0 <= v &*& v <= max &*&
+  buf != NULL &*& chars(buf, max, ?buf_val) &*&
+  start !=NULL &*& integer_(start, sizeof(size_t), false, ?start_val0) &*& 0 <= start_val0 &*& start_val0 <= max &*&
   max > 0;
 @*/
 /*@
 ensures
-  integer_(start, sizeof(size_t), false, _) &*&
-  chars(buf, max, _);
+  integer_(start, sizeof(size_t), false, ?start_val1) &*& 0 <= start_val1 &*& start_val1 <= max &*&
+  chars(buf, max, buf_val);
   @*/
 {
     size_t i;
-
     assert( ( buf != NULL ) && ( start != NULL ) && ( max > 0U ) );
 
     for( i = *start; i < max; i++ )
-    //@ invariant chars(buf, max, _) &*& 0 <= i &*& i <= max;
+    //@ invariant chars(buf, max, buf_val) &*& 0 <= i &*& i <= max;
     {
         if( !isspace_( buf[ i ] ) )
         {
@@ -583,12 +582,23 @@ static bool skipString( const char * buf,
 static bool strnEq( const char * a,
                     const char * b,
                     size_t n )
+/*@
+requires
+  a != NULL &*& chars(a, n, ?a_val) &*&
+  b != NULL &*& chars(b, n, ?b_val);
+@*/
+/*@
+ensures
+  chars(a, n, a_val) &*&
+  chars(b, n, b_val);
+@*/
 {
     size_t i;
 
     assert( ( a != NULL ) && ( b != NULL ) );
 
     for( i = 0; i < n; i++ )
+      //@ invariant chars(a, n, a_val) &*& chars(b, n, b_val);
     {
         if( a[ i ] != b[ i ] )
         {
@@ -616,6 +626,22 @@ static bool skipLiteral( const char * buf,
                          size_t max,
                          const char * literal,
                          size_t length )
+//  chars(buf + v, length, _);
+/*@
+requires
+  buf != NULL &*& chars(buf, max, ?buf_val) &*&
+  start != NULL &*& integer_(start, sizeof(size_t), false, ?v) &*& 0 <= v &*& v <= max &*&
+  max > 0 &*&
+  literal != NULL &*& chars(literal, length, ?literal_val) &*&
+  chars(buf + v, length, ?chars);
+@*/
+/*@
+ensures
+  integer_(start, sizeof(size_t), false, _) &*&
+  chars(buf, max, buf_val) &*&
+  chars(literal, length, literal_val) &*&
+  chars(buf + v, length, chars);
+  @*/
 {
     bool ret = false;
 
@@ -635,8 +661,6 @@ static bool skipLiteral( const char * buf,
     return ret;
 }
 
-#if 0
-
 /**
  * @brief Advance buffer index beyond a JSON literal.
  *
@@ -649,20 +673,41 @@ static bool skipLiteral( const char * buf,
  */
 #define skipLit_( x )     ( skipLiteral( buf, start, max, ( x ), ( sizeof( x ) - 1UL ) ) == true )
 
+#if 0
 static bool skipAnyLiteral( const char * buf,
                             size_t * start,
                             size_t max )
+/*@
+requires
+  buf != NULL &*& chars(buf, max, ?buf_val) &*&
+  start != NULL &*& integer_(start, sizeof(size_t), false, ?start_val0) &*& 0 <= start_val0 &*& start_val0 <= max &*&
+  max > 0;
+@*/
+/*@
+ensures
+  chars(buf, max, buf_val) &*&
+  start != NULL &*& integer_(start, sizeof(size_t), false, ?start_val1) &*& 0 <= start_val1 &*& start_val1 <= max;
+@*/
 {
     bool ret = false;
 
-    if( skipLit_( "true" ) || skipLit_( "false" ) || skipLit_( "null" ) )
+//  if( skipLit_( "true" ) || skipLit_( "false" ) || skipLit_( "null" ) )
+#if 0
+    if( skipLiteral( buf, start, max, ( "true" ), ( 4 ) ) == true
+        || skipLiteral( buf, start, max, ( "false" ), ( 5 ) ) == true
+        || skipLiteral( buf, start, max, ( "null" ), ( 4 ) ) == true
+      )
+#endif
+      char true_literal[5] = "true";
+      char *true_ptr = true_literal;
+      //@ assume(true_ptr != 0);
+    if( skipLiteral( buf, start, max, true_ptr, ( 4 ) ) == true)
     {
         ret = true;
     }
 
     return ret;
 }
-
 #endif
 
 /**
@@ -890,6 +935,17 @@ static bool skipAnyScalar( const char * buf,
 static bool skipSpaceAndComma( const char * buf,
                                size_t * start,
                                size_t max )
+/*@
+requires
+    buf != NULL &*& chars(buf, max, ?buffer) &*&
+    start != NULL &*& integer_(start, sizeof(size_t), false, ?v) &*& 0 <= v &*& v <= max &*&
+    max > 0;
+@*/
+/*@
+ensures
+    integer_(start, sizeof(size_t), false, _) &*&
+    chars(buf, max, buffer);
+@*/
 {
     bool ret = false;
     size_t i;
@@ -902,6 +958,7 @@ static bool skipSpaceAndComma( const char * buf,
     if( ( i < max ) && ( buf[ i ] == ',' ) )
     {
         i++;
+        //@ assume (&i != 0);
         skipSpace( buf, &i, max );
 
         if( ( i < max ) && !isCloseBracket_( buf[ i ] ) )
