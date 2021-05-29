@@ -1,8 +1,9 @@
+    hexToInt
 x   skipspace
 x   skipspaceandcomma
 x   skipliteral
-    skipanyliteral
-    skipdigits
+x   skipanyliteral
+x   skipdigits
     skip number
     skipescape
     skiputf8

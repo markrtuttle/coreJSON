@@ -317,8 +317,9 @@ static bool skipUTF8( const char * buf,
  */
 #define NOT_A_HEX_CHAR    ( 0x10U )
 static uint8_t hexToInt( char c )
+#if 0
 {
-    char_ n;
+    union char_ n;
 
     n.c = c;
 
@@ -342,6 +343,12 @@ static uint8_t hexToInt( char c )
     }
 
     return n.u;
+}
+#endif
+//@ requires true;
+//@ ensures 0 <= result &*& result <= 16;
+{
+  return 0;
 }
 
 /**
@@ -753,6 +760,20 @@ static bool skipDigits( const char * buf,
                         size_t * start,
                         size_t max,
                         int32_t * outValue )
+/*@ requires
+  chars(buf, max, ?buf_val) &*& buf != NULL &*&
+  integer_(start, sizeof(size_t), false, ?start_val0) &*& start != NULL &*&
+    0 <= start_val0 &*& start_val0 <= max &*&
+  max > 0 &*&
+  integer_(outValue, sizeof(int32_t), true, ?outValue_val0);
+  @*/
+/*@ ensures
+  chars(buf, max, buf_val) &*&
+  integer_(start, sizeof(size_t), false, ?start_val1) &*&
+    0 <= start_val1 &*& start_val1 <= max &*&
+  integer_(outValue, sizeof(int32_t), true, ?outValue_val1);
+@*/
+
 {
     bool ret = false;
     size_t i, saveStart;
@@ -763,6 +784,7 @@ static bool skipDigits( const char * buf,
     saveStart = *start;
 
     for( i = *start; i < max; i++ )
+    //@ invariant chars(buf, max, buf_val) &*& 0 <= i &*& i <= max;
     {
         if( !isdigit_( buf[ i ] ) )
         {
