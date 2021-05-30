@@ -4,8 +4,8 @@ x   skipspaceandcomma
 x   skipliteral
 x   skipanyliteral
 x   skipdigits
-    skip number
-    skipescape
+x   skip number
+x   skipescape
     skiputf8
     skipstring
     skiparrayscalars

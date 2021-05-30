@@ -66,6 +66,8 @@ typedef union
 } char_;
 #endif
 
+#define MAX_MAX (SIZE_MAX - 10)
+
 #if ( CHAR_MIN == 0 )
     #define isascii_( x )    ( ( x ) <= '\x7F' )
 #else
@@ -100,7 +102,7 @@ static void skipSpace( const char * buf,
   chars(buf, max, ?buf_val) &*& buf != NULL &*&
   integer_(start, sizeof(size_t), false, ?start_val0) &*& start !=NULL &*&
     0 <= start_val0 &*& start_val0 <= max &*&
-  max > 0;
+  0 < max &*& max <= MAX_MAX;
   @*/
 /*@ ensures
   chars(buf, max, buf_val) &*&
@@ -369,6 +371,18 @@ static bool skipOneHexEscape( const char * buf,
                               size_t * start,
                               size_t max,
                               uint16_t * outValue )
+/*@ requires
+  chars(buf, max, ?buf_val) &*& buf != NULL &*&
+  integer_(start, sizeof(size_t), false, ?v) &*& start != NULL &*&
+    0 <= v &*& v <= max &*&
+  0 < max &*& max <= MAX_MAX &*&
+  integer_(outValue, sizeof(uint16_t), false, _) &*& outValue != NULL;
+@*/
+/*@ ensures
+  chars(buf, max, buf_val) &*&
+  integer_(start, sizeof(size_t), false, ?w) &*& v <= w &*& w <= max &*&
+  integer_(outValue, sizeof(uint16_t), false, _);
+@*/
 {
     bool ret = false;
     size_t i, end;
@@ -384,6 +398,16 @@ static bool skipOneHexEscape( const char * buf,
     if( ( end < max ) && ( buf[ i ] == '\\' ) && ( buf[ i + 1U ] == 'u' ) )
     {
         for( i += 2U; i < end; i++ )
+          /*@ invariant
+                chars(buf, max, buf_val) &*&
+                0 <= end-i &*& end-i <= 4 &*&
+                ((end-i == 0) ||
+                 (end-i == 1 && value <= 0x0FFF) ||
+                 (end-i == 2 && value <= 0x00FF) ||
+                 (end-i == 3 && value <= 0x000F) ||
+                 (end-i == 4 && value <= 0x0000))
+               ;
+          @*/
         {
             uint8_t n = hexToInt( buf[ i ] );
 
@@ -392,7 +416,7 @@ static bool skipOneHexEscape( const char * buf,
                 break;
             }
 
-            value = ( value << 4U ) | n;
+            value = (uint16_t)((uint16_t)( value << 4U ) + n);
         }
     }
 
@@ -429,6 +453,16 @@ static bool skipOneHexEscape( const char * buf,
 static bool skipHexEscape( const char * buf,
                            size_t * start,
                            size_t max )
+/*@ requires
+  chars(buf, max, ?buf_val) &*& buf != NULL &*&
+  integer_(start, sizeof(size_t), false, ?v) &*& start != NULL &*&
+    0 <= v &*& v <= max &*&
+  0 < max &*& max <= MAX_MAX;
+@*/
+/*@ ensures
+  chars(buf, max, buf_val) &*&
+  integer_(start, sizeof(size_t), false, ?w) &*& v <= w &*& w <= max;
+@*/
 {
     bool ret = false;
     size_t i;
@@ -438,6 +472,8 @@ static bool skipHexEscape( const char * buf,
 
     i = *start;
 
+    //@ assume(&i != NULL);
+    //@ assume(&value != NULL);
     if( skipOneHexEscape( buf, &i, max, &value ) == true )
     {
         if( isHighSurrogate( value ) )
@@ -481,6 +517,16 @@ static bool skipHexEscape( const char * buf,
 static bool skipEscape( const char * buf,
                         size_t * start,
                         size_t max )
+/*@ requires
+  chars(buf, max, ?buf_val) &*& buf != NULL &*&
+  integer_(start, sizeof(size_t), false, ?v) &*& start != NULL &*&
+    0 <= v &*& v <= max &*&
+  0 < max &*& max <= MAX_MAX;
+@*/
+/*@ ensures
+  chars(buf, max, buf_val) &*&
+  integer_(start, sizeof(size_t), false, ?w) &*& v <= w &*& w <= max;
+@*/
 {
     bool ret = false;
     size_t i;
@@ -499,6 +545,7 @@ static bool skipEscape( const char * buf,
                 break;
 
             case 'u':
+                //@ assume(&i != NULL);
                 ret = skipHexEscape( buf, &i, max );
                 break;
 
@@ -659,7 +706,7 @@ static bool skipLiteral( const char * buf,
   chars(buf, max, ?buf_val) &*& buf != NULL &*&
   integer_(start, sizeof(size_t), false, ?v) &*& start != NULL &*&
     0 <= v &*& v <= max &*&
-  max > 0 &*&
+  0 < max &*& max <= MAX_MAX &*&
   literal != NULL &*& chars(literal, length, ?literal_val);
   @*/
 /*@ ensures
@@ -707,7 +754,7 @@ static bool skipAnyLiteral( const char * buf,
   chars(buf, max, ?buf_val) &*& buf != NULL &*&
   integer_(start, sizeof(size_t), false, ?start_val0) &*& start != NULL &*&
     0 <= start_val0 &*& start_val0 <= max &*&
-  max > 0;
+  0 < max &*& max <= MAX_MAX;
   @*/
 /*@ ensures
   chars(buf, max, buf_val) &*&
@@ -764,14 +811,13 @@ static bool skipDigits( const char * buf,
   chars(buf, max, ?buf_val) &*& buf != NULL &*&
   integer_(start, sizeof(size_t), false, ?start_val0) &*& start != NULL &*&
     0 <= start_val0 &*& start_val0 <= max &*&
-  max > 0 &*&
-  integer_(outValue, sizeof(int32_t), true, ?outValue_val0);
+  0 < max &*& max <= MAX_MAX &*&
+  outValue == 0;
   @*/
 /*@ ensures
   chars(buf, max, buf_val) &*&
   integer_(start, sizeof(size_t), false, ?start_val1) &*&
-    0 <= start_val1 &*& start_val1 <= max &*&
-  integer_(outValue, sizeof(int32_t), true, ?outValue_val1);
+    0 <= start_val1 &*& start_val1 <= max;
 @*/
 
 {
@@ -830,6 +876,17 @@ static bool skipDigits( const char * buf,
 static void skipDecimals( const char * buf,
                           size_t * start,
                           size_t max )
+/*@ requires
+  chars(buf, max, ?buffer) &*& buf != NULL &*&
+  integer_(start, sizeof(size_t), false, ?v) &*& start != NULL &*&
+    0 <= v &*& v <= max &*&
+  0 < max &*& max <= MAX_MAX;
+  @*/
+/*@ ensures
+  integer_(start, sizeof(size_t), false, ?vv) &*&
+    0 <= vv &*& vv <= max &*&
+  chars(buf, max, buffer);
+  @*/
 {
     size_t i;
 
@@ -841,6 +898,7 @@ static void skipDecimals( const char * buf,
     {
         i++;
 
+        //@ assume (&i != 0);
         if( skipDigits( buf, &i, max, NULL ) == true )
         {
             *start = i;
@@ -858,6 +916,17 @@ static void skipDecimals( const char * buf,
 static void skipExponent( const char * buf,
                           size_t * start,
                           size_t max )
+/*@ requires
+  chars(buf, max, ?buffer) &*& buf != NULL &*&
+  integer_(start, sizeof(size_t), false, ?v) &*& start != NULL &*&
+    0 <= v &*& v <= max &*&
+  0 < max &*& max <= MAX_MAX;
+  @*/
+/*@ ensures
+  integer_(start, sizeof(size_t), false, ?vv) &*&
+    0 <= vv &*& vv <= max &*&
+  chars(buf, max, buffer);
+  @*/
 {
     size_t i;
 
@@ -874,6 +943,7 @@ static void skipExponent( const char * buf,
             i++;
         }
 
+        //@ assume(&i != NULL);
         if( skipDigits( buf, &i, max, NULL ) == true )
         {
             *start = i;
@@ -894,6 +964,16 @@ static void skipExponent( const char * buf,
 static bool skipNumber( const char * buf,
                         size_t * start,
                         size_t max )
+/*@ requires
+  chars(buf, max, ?buffer) &*& buf != NULL &*&
+  integer_(start, sizeof(size_t), false, ?v) &*& start != NULL &*&
+    0 <= v &*& v <= max &*&
+  0 < max &*& max <= MAX_MAX;
+  @*/
+/*@ ensures
+  integer_(start, sizeof(size_t), false, _) &*&
+  chars(buf, max, buffer);
+  @*/
 {
     bool ret = false;
     size_t i;
@@ -923,13 +1003,16 @@ static bool skipNumber( const char * buf,
         }
         else
         {
+            //@ assume(&i != NULL);
             ret = skipDigits( buf, &i, max, NULL );
         }
     }
 
     if( ret == true )
     {
+        //@ assume(&i != NULL);
         skipDecimals( buf, &i, max );
+        //@ assume(&i != NULL);
         skipExponent( buf, &i, max );
         *start = i;
     }
@@ -984,7 +1067,7 @@ static bool skipSpaceAndComma( const char * buf,
   chars(buf, max, ?buffer) &*& buf != NULL &*&
   integer_(start, sizeof(size_t), false, ?v) &*& start != NULL &*&
     0 <= v &*& v <= max &*&
-  max > 0;
+  0 < max &*& max <= MAX_MAX;
   @*/
 /*@ ensures
   integer_(start, sizeof(size_t), false, _) &*&
