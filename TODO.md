@@ -6,9 +6,9 @@ x   skipanyliteral
 x   skipdigits
 x   skip number
 x   skipescape
-    skiputf8
-    skipstring
-    skiparrayscalars
+?    skiputf8
+x    skipstring
+x    skiparrayscalars
     skipobjectscalars
     skipcollection
     jsonsearch

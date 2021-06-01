@@ -289,6 +289,9 @@ static bool skipUTF8MultiByte( const char * buf,
 static bool skipUTF8( const char * buf,
                       size_t * start,
                       size_t max )
+//@ requires true;
+//@ ensures true;
+#if 0
 {
     bool ret = false;
 
@@ -308,6 +311,10 @@ static bool skipUTF8( const char * buf,
     }
 
     return ret;
+}
+#endif
+{
+  return true;
 }
 
 /**
@@ -595,6 +602,17 @@ static bool skipEscape( const char * buf,
 static bool skipString( const char * buf,
                         size_t * start,
                         size_t max )
+/*@ requires
+  chars(buf, max, ?buf_val) &*& buf != NULL &*&
+  integer_(start, sizeof(size_t), false, ?start_val0) &*& start !=NULL &*&
+    0 <= start_val0 &*& start_val0 <= max &*&
+  0 < max &*& max <= MAX_MAX;
+  @*/
+/*@ ensures
+  chars(buf, max, buf_val) &*&
+  integer_(start, sizeof(size_t), false, ?start_val1) &*&
+    0 <= start_val1 &*& start_val1 <= max;
+  @*/
 {
     bool ret = false;
     size_t i;
@@ -608,6 +626,7 @@ static bool skipString( const char * buf,
         i++;
 
         while( i < max )
+          //@ invariant chars(buf, max, buf_val) &*& u_integer(&i, ?ival) &*& 0 <= ival &*& ival <= max;
         {
             if( buf[ i ] == '"' )
             {
@@ -618,6 +637,7 @@ static bool skipString( const char * buf,
 
             if( buf[ i ] == '\\' )
             {
+              //@ assume(&i != NULL);
                 if( skipEscape( buf, &i, max ) != true )
                 {
                     break;
@@ -965,14 +985,15 @@ static bool skipNumber( const char * buf,
                         size_t * start,
                         size_t max )
 /*@ requires
-  chars(buf, max, ?buffer) &*& buf != NULL &*&
-  integer_(start, sizeof(size_t), false, ?v) &*& start != NULL &*&
-    0 <= v &*& v <= max &*&
+  chars(buf, max, ?buf_val) &*& buf != NULL &*&
+  integer_(start, sizeof(size_t), false, ?start_val0) &*& start !=NULL &*&
+    0 <= start_val0 &*& start_val0 <= max &*&
   0 < max &*& max <= MAX_MAX;
   @*/
 /*@ ensures
-  integer_(start, sizeof(size_t), false, _) &*&
-  chars(buf, max, buffer);
+  chars(buf, max, buf_val) &*&
+  integer_(start, sizeof(size_t), false, ?start_val1) &*&
+    0 <= start_val1 &*& start_val1 <= max;
   @*/
 {
     bool ret = false;
@@ -1033,6 +1054,17 @@ static bool skipNumber( const char * buf,
 static bool skipAnyScalar( const char * buf,
                            size_t * start,
                            size_t max )
+/*@ requires
+  chars(buf, max, ?buf_val) &*& buf != NULL &*&
+  integer_(start, sizeof(size_t), false, ?start_val0) &*& start !=NULL &*&
+    0 <= start_val0 &*& start_val0 <= max &*&
+  0 < max &*& max <= MAX_MAX;
+  @*/
+/*@ ensures
+  chars(buf, max, buf_val) &*&
+  integer_(start, sizeof(size_t), false, ?start_val1) &*&
+    0 <= start_val1 &*& start_val1 <= max;
+  @*/
 {
     bool ret = false;
 
@@ -1064,14 +1096,15 @@ static bool skipSpaceAndComma( const char * buf,
                                size_t * start,
                                size_t max )
 /*@ requires
-  chars(buf, max, ?buffer) &*& buf != NULL &*&
-  integer_(start, sizeof(size_t), false, ?v) &*& start != NULL &*&
-    0 <= v &*& v <= max &*&
+  chars(buf, max, ?buf_val) &*& buf != NULL &*&
+  integer_(start, sizeof(size_t), false, ?start_val0) &*& start !=NULL &*&
+    0 <= start_val0 &*& start_val0 <= max &*&
   0 < max &*& max <= MAX_MAX;
   @*/
 /*@ ensures
-  integer_(start, sizeof(size_t), false, _) &*&
-  chars(buf, max, buffer);
+  chars(buf, max, buf_val) &*&
+  integer_(start, sizeof(size_t), false, ?start_val1) &*&
+    0 <= start_val1 &*& start_val1 <= max;
   @*/
 {
     bool ret = false;
@@ -1110,6 +1143,17 @@ static bool skipSpaceAndComma( const char * buf,
 static void skipArrayScalars( const char * buf,
                               size_t * start,
                               size_t max )
+/*@ requires
+  chars(buf, max, ?buf_val) &*& buf != NULL &*&
+  integer_(start, sizeof(size_t), false, ?start_val0) &*& start !=NULL &*&
+    0 <= start_val0 &*& start_val0 <= max &*&
+  0 < max &*& max <= MAX_MAX;
+  @*/
+/*@ ensures
+  chars(buf, max, buf_val) &*&
+  integer_(start, sizeof(size_t), false, ?start_val1) &*&
+    0 <= start_val1 &*& start_val1 <= max;
+  @*/
 {
     size_t i;
 
@@ -1118,12 +1162,15 @@ static void skipArrayScalars( const char * buf,
     i = *start;
 
     while( i < max )
+          //@ invariant chars(buf, max, buf_val) &*& u_integer(&i, ?ival) &*& 0 <= ival &*& ival <= max;
     {
+      //@ assume(&i != NULL);
         if( skipAnyScalar( buf, &i, max ) != true )
         {
             break;
         }
 
+      //@ assume(&i != NULL);
         if( skipSpaceAndComma( buf, &i, max ) != true )
         {
             break;
