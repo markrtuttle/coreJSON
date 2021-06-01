@@ -1198,6 +1198,17 @@ static void skipArrayScalars( const char * buf,
 static void skipObjectScalars( const char * buf,
                                size_t * start,
                                size_t max )
+/*@ requires
+  chars(buf, max, ?buf_val) &*& buf != NULL &*&
+  integer_(start, sizeof(size_t), false, ?start_val0) &*& start !=NULL &*&
+    0 <= start_val0 &*& start_val0 <= max &*&
+  0 < max &*& max <= MAX_MAX;
+  @*/
+/*@ ensures
+  chars(buf, max, buf_val) &*&
+  integer_(start, sizeof(size_t), false, ?start_val1) &*&
+    0 <= start_val1 &*& start_val1 <= max;
+  @*/
 {
     size_t i;
     bool comma;
@@ -1207,7 +1218,12 @@ static void skipObjectScalars( const char * buf,
     i = *start;
 
     while( i < max )
+      /*@ invariant chars(buf, max, buf_val) &*& u_integer(&i, ?ival) &*& 0 <= ival &*& ival <= max &*&
+            integer_(start, sizeof(size_t), false, ?start_val) &*& start !=NULL &*&
+            0 <= start_val &*& start_val <= max;
+      @*/
     {
+      //@ assume(&i != NULL);
         if( skipString( buf, &i, max ) != true )
         {
             break;
@@ -1221,6 +1237,7 @@ static void skipObjectScalars( const char * buf,
         }
 
         i++;
+        if (i >= max) break;  // bug?
         skipSpace( buf, &i, max );
 
         if( ( i < max ) && isOpenBracket_( buf[ i ] ) )
@@ -1229,11 +1246,13 @@ static void skipObjectScalars( const char * buf,
             break;
         }
 
+        if (i >= max) break;  // bug?
         if( skipAnyScalar( buf, &i, max ) != true )
         {
             break;
         }
 
+        if (i >= max) break;  // bug?
         comma = skipSpaceAndComma( buf, &i, max );
         *start = i;
 
