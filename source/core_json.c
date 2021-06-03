@@ -107,14 +107,15 @@ static void skipSpace( const char * buf,
 /*@ ensures
   chars(buf, max, buf_val) &*&
   integer_(start, sizeof(size_t), false, ?start_val1) &*&
-    0 <= start_val1 &*& start_val1 <= max;
+    start_val0 <= start_val1 &*& start_val1 <= max;
   @*/
 {
     size_t i;
     assert( ( buf != NULL ) && ( start != NULL ) && ( max > 0U ) );
 
+    //@ size_t start_val = *start;
     for( i = *start; i < max; i++ )
-    //@ invariant chars(buf, max, buf_val) &*& 0 <= i &*& i <= max;
+    //@ invariant chars(buf, max, buf_val) &*& start_val <= i &*& i <= max;
     {
         if( !isspace_( buf[ i ] ) )
         {
@@ -611,7 +612,7 @@ static bool skipString( const char * buf,
 /*@ ensures
   chars(buf, max, buf_val) &*&
   integer_(start, sizeof(size_t), false, ?start_val1) &*&
-    0 <= start_val1 &*& start_val1 <= max;
+    start_val0 <= start_val1 &*& start_val1 <= max;
   @*/
 {
     bool ret = false;
@@ -626,7 +627,7 @@ static bool skipString( const char * buf,
         i++;
 
         while( i < max )
-          //@ invariant chars(buf, max, buf_val) &*& u_integer(&i, ?ival) &*& 0 <= ival &*& ival <= max;
+          //@ invariant chars(buf, max, buf_val) &*& u_integer(&i, ?ival) &*& start_val0 <= ival &*& ival <= max;
         {
             if( buf[ i ] == '"' )
             {
@@ -779,7 +780,7 @@ static bool skipAnyLiteral( const char * buf,
 /*@ ensures
   chars(buf, max, buf_val) &*&
   integer_(start, sizeof(size_t), false, ?start_val1) &*&
-    0 <= start_val1 &*& start_val1 <= max;
+    start_val0 <= start_val1 &*& start_val1 <= max;
 @*/
 {
     bool ret = false;
@@ -837,7 +838,7 @@ static bool skipDigits( const char * buf,
 /*@ ensures
   chars(buf, max, buf_val) &*&
   integer_(start, sizeof(size_t), false, ?start_val1) &*&
-    0 <= start_val1 &*& start_val1 <= max;
+    start_val0 <= start_val1 &*& start_val1 <= max;
 @*/
 
 {
@@ -850,7 +851,7 @@ static bool skipDigits( const char * buf,
     saveStart = *start;
 
     for( i = *start; i < max; i++ )
-    //@ invariant chars(buf, max, buf_val) &*& 0 <= i &*& i <= max;
+    //@ invariant chars(buf, max, buf_val) &*& start_val0 <= i &*& i <= max;
     {
         if( !isdigit_( buf[ i ] ) )
         {
@@ -904,7 +905,7 @@ static void skipDecimals( const char * buf,
   @*/
 /*@ ensures
   integer_(start, sizeof(size_t), false, ?vv) &*&
-    0 <= vv &*& vv <= max &*&
+    v <= vv &*& vv <= max &*&
   chars(buf, max, buffer);
   @*/
 {
@@ -944,7 +945,7 @@ static void skipExponent( const char * buf,
   @*/
 /*@ ensures
   integer_(start, sizeof(size_t), false, ?vv) &*&
-    0 <= vv &*& vv <= max &*&
+    v <= vv &*& vv <= max &*&
   chars(buf, max, buffer);
   @*/
 {
@@ -993,7 +994,7 @@ static bool skipNumber( const char * buf,
 /*@ ensures
   chars(buf, max, buf_val) &*&
   integer_(start, sizeof(size_t), false, ?start_val1) &*&
-    0 <= start_val1 &*& start_val1 <= max;
+    start_val0 <= start_val1 &*& start_val1 <= max;
   @*/
 {
     bool ret = false;
@@ -1063,7 +1064,7 @@ static bool skipAnyScalar( const char * buf,
 /*@ ensures
   chars(buf, max, buf_val) &*&
   integer_(start, sizeof(size_t), false, ?start_val1) &*&
-    0 <= start_val1 &*& start_val1 <= max;
+    start_val0 <= start_val1 &*& start_val1 <= max;
   @*/
 {
     bool ret = false;
@@ -1104,7 +1105,7 @@ static bool skipSpaceAndComma( const char * buf,
 /*@ ensures
   chars(buf, max, buf_val) &*&
   integer_(start, sizeof(size_t), false, ?start_val1) &*&
-    0 <= start_val1 &*& start_val1 <= max;
+    start_val0 <= start_val1 &*& start_val1 <= max;
   @*/
 {
     bool ret = false;
@@ -1152,7 +1153,7 @@ static void skipArrayScalars( const char * buf,
 /*@ ensures
   chars(buf, max, buf_val) &*&
   integer_(start, sizeof(size_t), false, ?start_val1) &*&
-    0 <= start_val1 &*& start_val1 <= max;
+    start_val0 <= start_val1 &*& start_val1 <= max;
   @*/
 {
     size_t i;
@@ -1162,7 +1163,7 @@ static void skipArrayScalars( const char * buf,
     i = *start;
 
     while( i < max )
-          //@ invariant chars(buf, max, buf_val) &*& u_integer(&i, ?ival) &*& 0 <= ival &*& ival <= max;
+          //@ invariant chars(buf, max, buf_val) &*& u_integer(&i, ?ival) &*& start_val0 <= ival &*& ival <= max;
     {
       //@ assume(&i != NULL);
         if( skipAnyScalar( buf, &i, max ) != true )
@@ -1207,7 +1208,7 @@ static void skipObjectScalars( const char * buf,
 /*@ ensures
   chars(buf, max, buf_val) &*&
   integer_(start, sizeof(size_t), false, ?start_val1) &*&
-    0 <= start_val1 &*& start_val1 <= max;
+    start_val0 <= start_val1 &*& start_val1 <= max;
   @*/
 {
     size_t i;
@@ -1218,9 +1219,10 @@ static void skipObjectScalars( const char * buf,
     i = *start;
 
     while( i < max )
-      /*@ invariant chars(buf, max, buf_val) &*& u_integer(&i, ?ival) &*& 0 <= ival &*& ival <= max &*&
+      /*@ invariant chars(buf, max, buf_val) &*& 
             integer_(start, sizeof(size_t), false, ?start_val) &*& start !=NULL &*&
-            0 <= start_val &*& start_val <= max;
+            start_val0 <= start_val &*& start_val <= max &*&
+            u_integer(&i, ?ival) &*& start_val <= ival &*& ival <= max;
       @*/
     {
       //@ assume(&i != NULL);
@@ -1275,6 +1277,18 @@ static void skipScalars( const char * buf,
                          size_t * start,
                          size_t max,
                          char mode )
+/*@ requires
+  chars(buf, max, ?buf_val) &*& buf != NULL &*&
+  integer_(start, sizeof(size_t), false, ?start_val0) &*& start !=NULL &*&
+    0 <= start_val0 &*& start_val0 <= max &*&
+  0 < max &*& max <= MAX_MAX &*&
+  isOpenBracket_( mode );
+  @*/
+/*@ ensures
+  chars(buf, max, buf_val) &*&
+  integer_(start, sizeof(size_t), false, ?start_val1) &*&
+    start_val0 <= start_val1 &*& start_val1 <= max;
+  @*/
 {
     assert( isOpenBracket_( mode ) );
 
@@ -1308,9 +1322,23 @@ static void skipScalars( const char * buf,
 #ifndef JSON_MAX_DEPTH
     #define JSON_MAX_DEPTH    32
 #endif
+
+//@ predicate openbracket(char c) = c == '{' || c == '[';
+
 static JSONStatus_t skipCollection( const char * buf,
                                     size_t * start,
                                     size_t max )
+/*@ requires
+  chars(buf, max, ?buf_val) &*& buf != NULL &*&
+  integer_(start, sizeof(size_t), false, ?start_val0) &*& start !=NULL &*&
+    0 <= start_val0 &*& start_val0 <= max &*&
+  0 < max &*& max <= MAX_MAX;
+  @*/
+/*@ ensures
+  chars(buf, max, buf_val) &*&
+  integer_(start, sizeof(size_t), false, ?start_val1) &*&
+    start_val0 <= start_val1 &*& start_val1 <= max;
+  @*/
 {
     JSONStatus_t ret = JSONPartial;
     char c, stack[ JSON_MAX_DEPTH ];
@@ -1320,11 +1348,16 @@ static JSONStatus_t skipCollection( const char * buf,
     assert( ( buf != NULL ) && ( start != NULL ) && ( max > 0U ) );
 
     i = *start;
-
+    //@ size_t old_ival = i;
     while( i < max )
+      /*@ invariant chars(buf, max, buf_val) &*& u_integer(&i, ?ival) &*& start_val0 <= ival &*& ival <= max &*& -1 <= depth &*& depth < JSON_MAX_DEPTH
+        &*& chars(stack, JSON_MAX_DEPTH, ?stack_val) &*& forall_(size_t idx; !(0 <= idx && idx <= depth) || isOpenBracket_(nth(idx,stack_val)));
+        @*/
+
     {
         c = buf[ i ];
         i++;
+        //@ assume(&i != NULL);
 
         switch( c )
         {
@@ -1335,9 +1368,9 @@ static JSONStatus_t skipCollection( const char * buf,
                 if( depth == JSON_MAX_DEPTH )
                 {
                     ret = JSONMaxDepthExceeded;
+
                     break;
                 }
-
                 stack[ depth ] = c;
                 skipScalars( buf, &i, max, stack[ depth ] );
                 break;
@@ -1367,6 +1400,7 @@ static JSONStatus_t skipCollection( const char * buf,
 
         if( ret != JSONPartial )
         {
+
             break;
         }
     }
@@ -1377,6 +1411,7 @@ static JSONStatus_t skipCollection( const char * buf,
     }
 
     return ret;
+
 }
 
 /** @endcond */

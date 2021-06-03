@@ -9,6 +9,6 @@ x   skipescape
 ?    skiputf8
 x    skipstring
 x    skiparrayscalars
-    skipobjectscalars
-    skipcollection
+x    skipobjectscalars
+x    skipcollection
     jsonsearch
