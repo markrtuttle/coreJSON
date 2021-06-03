@@ -113,9 +113,8 @@ static void skipSpace( const char * buf,
     size_t i;
     assert( ( buf != NULL ) && ( start != NULL ) && ( max > 0U ) );
 
-    //@ size_t start_val = *start;
     for( i = *start; i < max; i++ )
-    //@ invariant chars(buf, max, buf_val) &*& start_val <= i &*& i <= max;
+    //@ invariant chars(buf, max, buf_val) &*& start_val0 <= i &*& i <= max;
     {
         if( !isspace_( buf[ i ] ) )
         {
@@ -381,14 +380,14 @@ static bool skipOneHexEscape( const char * buf,
                               uint16_t * outValue )
 /*@ requires
   chars(buf, max, ?buf_val) &*& buf != NULL &*&
-  integer_(start, sizeof(size_t), false, ?v) &*& start != NULL &*&
-    0 <= v &*& v <= max &*&
+  integer_(start, sizeof(size_t), false, ?start_val0) &*& start != NULL &*&
+    0 <= start_val0 &*& start_val0 <= max &*&
   0 < max &*& max <= MAX_MAX &*&
   integer_(outValue, sizeof(uint16_t), false, _) &*& outValue != NULL;
 @*/
 /*@ ensures
   chars(buf, max, buf_val) &*&
-  integer_(start, sizeof(size_t), false, ?w) &*& v <= w &*& w <= max &*&
+  integer_(start, sizeof(size_t), false, ?start_val1) &*& start_val0 <= start_val1 &*& start_val1 <= max &*&
   integer_(outValue, sizeof(uint16_t), false, _);
 @*/
 {
@@ -463,13 +462,13 @@ static bool skipHexEscape( const char * buf,
                            size_t max )
 /*@ requires
   chars(buf, max, ?buf_val) &*& buf != NULL &*&
-  integer_(start, sizeof(size_t), false, ?v) &*& start != NULL &*&
-    0 <= v &*& v <= max &*&
+  integer_(start, sizeof(size_t), false, ?start_val0) &*& start != NULL &*&
+    0 <= start_val0 &*& start_val0 <= max &*&
   0 < max &*& max <= MAX_MAX;
 @*/
 /*@ ensures
   chars(buf, max, buf_val) &*&
-  integer_(start, sizeof(size_t), false, ?w) &*& v <= w &*& w <= max;
+  integer_(start, sizeof(size_t), false, ?start_val1) &*& start_val0 <= start_val1 &*& start_val1 <= max;
 @*/
 {
     bool ret = false;
@@ -527,13 +526,13 @@ static bool skipEscape( const char * buf,
                         size_t max )
 /*@ requires
   chars(buf, max, ?buf_val) &*& buf != NULL &*&
-  integer_(start, sizeof(size_t), false, ?v) &*& start != NULL &*&
-    0 <= v &*& v <= max &*&
+  integer_(start, sizeof(size_t), false, ?start_val0) &*& start != NULL &*&
+    0 <= start_val0 &*& start_val0 <= max &*&
   0 < max &*& max <= MAX_MAX;
 @*/
 /*@ ensures
   chars(buf, max, buf_val) &*&
-  integer_(start, sizeof(size_t), false, ?w) &*& v <= w &*& w <= max;
+  integer_(start, sizeof(size_t), false, ?start_val1) &*& start_val0 <= start_val1 &*& start_val1 <= max;
 @*/
 {
     bool ret = false;
@@ -612,7 +611,8 @@ static bool skipString( const char * buf,
 /*@ ensures
   chars(buf, max, buf_val) &*&
   integer_(start, sizeof(size_t), false, ?start_val1) &*&
-    start_val0 <= start_val1 &*& start_val1 <= max;
+    start_val0 <= start_val1 &*& start_val1 <= max &*&
+  (!result || start_val0 < start_val1);
   @*/
 {
     bool ret = false;
@@ -725,15 +725,16 @@ static bool skipLiteral( const char * buf,
                          size_t length )
 /*@ requires
   chars(buf, max, ?buf_val) &*& buf != NULL &*&
-  integer_(start, sizeof(size_t), false, ?v) &*& start != NULL &*&
-    0 <= v &*& v <= max &*&
+  integer_(start, sizeof(size_t), false, ?start_val0) &*& start != NULL &*&
+    0 <= start_val0 &*& start_val0 <= max &*&
   0 < max &*& max <= MAX_MAX &*&
   literal != NULL &*& chars(literal, length, ?literal_val);
   @*/
 /*@ ensures
   chars(buf, max, buf_val) &*&
-  integer_(start, sizeof(size_t), false, ?w) &*& v <= w &*& w <= max &*&
-  chars(literal, length, literal_val);
+  integer_(start, sizeof(size_t), false, ?start_val1) &*& start_val0 <= start_val1 &*& start_val1 <= max &*&
+  chars(literal, length, literal_val) &*&
+  (!result || length == 0 || start_val0 < start_val1);
   @*/
 {
     bool ret = false;
@@ -780,7 +781,8 @@ static bool skipAnyLiteral( const char * buf,
 /*@ ensures
   chars(buf, max, buf_val) &*&
   integer_(start, sizeof(size_t), false, ?start_val1) &*&
-    start_val0 <= start_val1 &*& start_val1 <= max;
+    start_val0 <= start_val1 &*& start_val1 <= max &*&
+  (!result || start_val0 < start_val1);
 @*/
 {
     bool ret = false;
@@ -833,13 +835,14 @@ static bool skipDigits( const char * buf,
   integer_(start, sizeof(size_t), false, ?start_val0) &*& start != NULL &*&
     0 <= start_val0 &*& start_val0 <= max &*&
   0 < max &*& max <= MAX_MAX &*&
-  outValue == NULL ? true : integer_(outValue, sizeof(int32_t), true, _);
+  outValue == NULL ? true : integer_(outValue, sizeof(int32_t), true, ?outvalue0) &*& outvalue0 <= INT_MAX;
   @*/
 /*@ ensures
   chars(buf, max, buf_val) &*&
   integer_(start, sizeof(size_t), false, ?start_val1) &*&
     start_val0 <= start_val1 &*& start_val1 <= max &*&
-  outValue == NULL ? true : integer_(outValue, sizeof(int32_t), true, _);
+  (outValue == NULL ? true : integer_(outValue, sizeof(int32_t), true, ?outvalue1) &*& outvalue1 <= INT_MAX) &*&
+  (!result || start_val0 < start_val1);
 @*/
 
 {
@@ -852,7 +855,7 @@ static bool skipDigits( const char * buf,
     saveStart = *start;
 
     for( i = *start; i < max; i++ )
-    //@ invariant chars(buf, max, buf_val) &*& start_val0 <= i &*& i <= max;
+    //@ invariant chars(buf, max, buf_val) &*& start_val0 <= i &*& i <= max &*&  value <= INT_MAX;
     {
         if( !isdigit_( buf[ i ] ) )
         {
@@ -900,13 +903,13 @@ static void skipDecimals( const char * buf,
                           size_t max )
 /*@ requires
   chars(buf, max, ?buffer) &*& buf != NULL &*&
-  integer_(start, sizeof(size_t), false, ?v) &*& start != NULL &*&
-    0 <= v &*& v <= max &*&
+  integer_(start, sizeof(size_t), false, ?start_val0) &*& start != NULL &*&
+    0 <= start_val0 &*& start_val0 <= max &*&
   0 < max &*& max <= MAX_MAX;
   @*/
 /*@ ensures
-  integer_(start, sizeof(size_t), false, ?vv) &*&
-    v <= vv &*& vv <= max &*&
+  integer_(start, sizeof(size_t), false, ?start_val1) &*&
+    start_val0 <= start_val1 &*& start_val1 <= max &*&
   chars(buf, max, buffer);
   @*/
 {
@@ -940,13 +943,13 @@ static void skipExponent( const char * buf,
                           size_t max )
 /*@ requires
   chars(buf, max, ?buffer) &*& buf != NULL &*&
-  integer_(start, sizeof(size_t), false, ?v) &*& start != NULL &*&
-    0 <= v &*& v <= max &*&
+  integer_(start, sizeof(size_t), false, ?start_val0) &*& start != NULL &*&
+    0 <= start_val0 &*& start_val0 <= max &*&
   0 < max &*& max <= MAX_MAX;
   @*/
 /*@ ensures
-  integer_(start, sizeof(size_t), false, ?vv) &*&
-    v <= vv &*& vv <= max &*&
+  integer_(start, sizeof(size_t), false, ?start_val1) &*&
+    start_val0 <= start_val1 &*& start_val1 <= max &*&
   chars(buf, max, buffer);
   @*/
 {
@@ -995,11 +998,13 @@ static bool skipNumber( const char * buf,
 /*@ ensures
   chars(buf, max, buf_val) &*&
   integer_(start, sizeof(size_t), false, ?start_val1) &*&
-    start_val0 <= start_val1 &*& start_val1 <= max;
+    start_val0 <= start_val1 &*& start_val1 <= max &*&
+  (!result || start_val0 < start_val1);
   @*/
 {
     bool ret = false;
     size_t i;
+    //@ assume(&i != NULL);
 
     assert( ( buf != NULL ) && ( start != NULL ) && ( max > 0U ) );
 
@@ -1026,16 +1031,14 @@ static bool skipNumber( const char * buf,
         }
         else
         {
-            //@ assume(&i != NULL);
+
             ret = skipDigits( buf, &i, max, NULL );
         }
     }
 
     if( ret == true )
     {
-        //@ assume(&i != NULL);
         skipDecimals( buf, &i, max );
-        //@ assume(&i != NULL);
         skipExponent( buf, &i, max );
         *start = i;
     }
@@ -1065,7 +1068,8 @@ static bool skipAnyScalar( const char * buf,
 /*@ ensures
   chars(buf, max, buf_val) &*&
   integer_(start, sizeof(size_t), false, ?start_val1) &*&
-    start_val0 <= start_val1 &*& start_val1 <= max;
+    start_val0 <= start_val1 &*& start_val1 <= max &*&
+  (!result || start_val0 < start_val1);
   @*/
 {
     bool ret = false;
@@ -1102,12 +1106,13 @@ static bool skipSpaceAndComma( const char * buf,
   integer_(start, sizeof(size_t), false, ?start_val0) &*& start !=NULL &*&
     0 <= start_val0 &*& start_val0 <= max &*&
   0 < max &*& max <= MAX_MAX;
-  @*/
+@*/
 /*@ ensures
   chars(buf, max, buf_val) &*&
   integer_(start, sizeof(size_t), false, ?start_val1) &*&
-    start_val0 <= start_val1 &*& start_val1 <= max;
-  @*/
+    start_val0 <= start_val1 &*& start_val1 <= max &*&
+  (!result || start_val0 < start_val1);
+@*/
 {
     bool ret = false;
     size_t i;
@@ -1162,17 +1167,16 @@ static void skipArrayScalars( const char * buf,
     assert( ( buf != NULL ) && ( start != NULL ) && ( max > 0U ) );
 
     i = *start;
+    //@ assume(&i != NULL);
 
     while( i < max )
           //@ invariant chars(buf, max, buf_val) &*& u_integer(&i, ?ival) &*& start_val0 <= ival &*& ival <= max;
     {
-      //@ assume(&i != NULL);
         if( skipAnyScalar( buf, &i, max ) != true )
         {
             break;
         }
 
-      //@ assume(&i != NULL);
         if( skipSpaceAndComma( buf, &i, max ) != true )
         {
             break;
@@ -1338,27 +1342,29 @@ static JSONStatus_t skipCollection( const char * buf,
 /*@ ensures
   chars(buf, max, buf_val) &*&
   integer_(start, sizeof(size_t), false, ?start_val1) &*&
-    start_val0 <= start_val1 &*& start_val1 <= max;
+    start_val0 <= start_val1 &*& start_val1 <= max &*&
+  (result != JSONSuccess || start_val0 < start_val1);
   @*/
 {
     JSONStatus_t ret = JSONPartial;
     char c, stack[ JSON_MAX_DEPTH ];
     int16_t depth = -1;
     size_t i;
+    //@ assume(&i != NULL);
 
     assert( ( buf != NULL ) && ( start != NULL ) && ( max > 0U ) );
+    assert( ret == JSONPartial );
 
     i = *start;
-    //@ size_t old_ival = i;
     while( i < max )
       /*@ invariant chars(buf, max, buf_val) &*& u_integer(&i, ?ival) &*& start_val0 <= ival &*& ival <= max &*& -1 <= depth &*& depth < JSON_MAX_DEPTH
-        &*& chars(stack, JSON_MAX_DEPTH, ?stack_val) &*& forall_(size_t idx; !(0 <= idx && idx <= depth) || isOpenBracket_(nth(idx,stack_val)));
+        &*& chars(stack, JSON_MAX_DEPTH, ?stack_val) &*& forall_(size_t idx; !(0 <= idx && idx <= depth) || isOpenBracket_(nth(idx,stack_val))) &*&
+        (ival != start_val0 || ret == JSONPartial);
         @*/
 
     {
         c = buf[ i ];
         i++;
-        //@ assume(&i != NULL);
 
         switch( c )
         {
@@ -1499,9 +1505,26 @@ static bool nextValue( const char * buf,
                        size_t max,
                        size_t * value,
                        size_t * valueLength )
+/*@ requires
+  chars(buf, max, ?buf_val) &*& buf != NULL &*&
+  integer_(start, sizeof(size_t), false, ?start_val0) &*& start != NULL &*&
+    0 <= start_val0 &*& start_val0 <= max &*&
+  0 < max &*& max <= MAX_MAX &*&
+  integer_(value, sizeof(size_t), false, _) &*& value != NULL &*&
+  integer_(valueLength, sizeof(size_t), false, _) &*& valueLength != NULL;
+  @*/
+/*@ ensures
+  chars(buf, max, buf_val) &*&
+  integer_(start, sizeof(size_t), false, ?start_val1) &*& start != NULL &*&
+    start_val0 <= start_val1 &*& start_val1 <= max &*&
+  integer_(value, sizeof(size_t), false, _) &*&
+  integer_(valueLength, sizeof(size_t), false, _) &*&
+  (!result || start_val0 < start_val1);
+  @*/
 {
     bool ret = true;
     size_t i, valueStart;
+    //@ assume(&i != NULL);
 
     assert( ( buf != NULL ) && ( start != NULL ) && ( max > 0U ) );
     assert( ( value != NULL ) && ( valueLength != NULL ) );
@@ -1509,8 +1532,10 @@ static bool nextValue( const char * buf,
     i = *start;
     valueStart = i;
 
-    if( ( skipAnyScalar( buf, &i, max ) == true ) ||
-        ( skipCollection( buf, &i, max ) == JSONSuccess ) )
+    bool scalar_result = skipAnyScalar( buf, &i, max );
+    int collection_result = skipCollection( buf, &i, max );
+    if( ( scalar_result == true ) ||
+        ( collection_result == JSONSuccess ) )
     {
         *value = valueStart;
         *valueLength = i - valueStart;
@@ -1691,10 +1716,24 @@ static bool arraySearch( const char * buf,
                          uint32_t queryIndex,
                          size_t * outValue,
                          size_t * outValueLength )
+/*@ requires
+  chars(buf, max, ?buf_val) &*& buf != NULL &*&
+  0 < max &*& max <= MAX_MAX &*&
+  integer_(outValue, sizeof(size_t), false, ?outvalue) &*& outValue != NULL &*&
+  integer_(outValueLength, sizeof(size_t), false, ?outvaluelength) &*& outValueLength != NULL;
+  @*/
+/*@ ensures
+  chars(buf, max, buf_val) &*&
+  integer_(outValue, sizeof(size_t), false, _) &*&
+  integer_(outValueLength, sizeof(size_t), false, _);
+  @*/
 {
     bool ret = false;
     size_t i = 0, value = 0, valueLength = 0;
     uint32_t currentIndex = 0;
+    //@ assume(&i != NULL);
+    //@ assume(&value != NULL);
+    //@ assume(&valueLength != NULL);
 
     assert( buf != NULL );
     assert( ( outValue != NULL ) && ( outValueLength != NULL ) );
@@ -1707,6 +1746,14 @@ static bool arraySearch( const char * buf,
         skipSpace( buf, &i, max );
 
         while( i < max )
+          /*@ invariant
+              chars(buf, max, buf_val) &*&
+              u_integer(&i, ?ival) &*& 0 <= ival &*& ival <= max &*&
+              u_integer(&value, _) &*&
+              u_integer(&valueLength, _) &*&
+              currentIndex <= queryIndex;
+          @*/
+
         {
             if( nextValue( buf, &i, max, &value, &valueLength ) != true )
             {
