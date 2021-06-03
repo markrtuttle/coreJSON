@@ -833,12 +833,13 @@ static bool skipDigits( const char * buf,
   integer_(start, sizeof(size_t), false, ?start_val0) &*& start != NULL &*&
     0 <= start_val0 &*& start_val0 <= max &*&
   0 < max &*& max <= MAX_MAX &*&
-  outValue == 0;
+  outValue == NULL ? true : integer_(outValue, sizeof(int32_t), true, _);
   @*/
 /*@ ensures
   chars(buf, max, buf_val) &*&
   integer_(start, sizeof(size_t), false, ?start_val1) &*&
-    start_val0 <= start_val1 &*& start_val1 <= max;
+    start_val0 <= start_val1 &*& start_val1 <= max &*&
+  outValue == NULL ? true : integer_(outValue, sizeof(int32_t), true, _);
 @*/
 
 {
@@ -1219,7 +1220,7 @@ static void skipObjectScalars( const char * buf,
     i = *start;
 
     while( i < max )
-      /*@ invariant chars(buf, max, buf_val) &*& 
+      /*@ invariant chars(buf, max, buf_val) &*&
             integer_(start, sizeof(size_t), false, ?start_val) &*& start !=NULL &*&
             start_val0 <= start_val &*& start_val <= max &*&
             u_integer(&i, ?ival) &*& start_val <= ival &*& ival <= max;
@@ -1424,9 +1425,17 @@ static JSONStatus_t skipCollection( const char * buf,
  */
 JSONStatus_t JSON_Validate( const char * buf,
                             size_t max )
+/*@ requires
+  chars(buf, max, ?buf_val) &*& buf != NULL &*&
+  0 < max &*& max <= MAX_MAX;
+  @*/
+/*@ ensures
+  chars(buf, max, buf_val);
+  @*/
 {
     JSONStatus_t ret;
     size_t i = 0;
+    //@ assume(&i != NULL);
 
     if( buf == NULL )
     {
@@ -1806,6 +1815,7 @@ static JSONStatus_t multiSearch( const char * buf,
     assert( ( buf != NULL ) && ( query != NULL ) );
     assert( ( outValue != NULL ) && ( outValueLength != NULL ) );
     assert( ( max > 0U ) && ( queryLength > 0U ) );
+    assert( queryLength <= max );
 
     while( i < queryLength )
     {
@@ -1816,7 +1826,7 @@ static JSONStatus_t multiSearch( const char * buf,
             int32_t queryIndex = -1;
             i++;
 
-            ( void ) skipDigits( query, &i, queryLength, &queryIndex );
+            skipDigits( query, &i, queryLength, &queryIndex );
 
             if( ( queryIndex < 0 ) ||
                 ( i >= queryLength ) || !isSquareClose_( query[ i ] ) )

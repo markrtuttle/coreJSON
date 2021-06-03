@@ -11,4 +11,7 @@ x    skipstring
 x    skiparrayscalars
 x    skipobjectscalars
 x    skipcollection
-    jsonsearch
+x    JSON_Validate
+    JSON_SearchT
+    JSON_SearchConst
+    JSON_Iterate
