@@ -1808,9 +1808,26 @@ static JSONStatus_t multiSearch( const char * buf,
                                  size_t queryLength,
                                  size_t * outValue,
                                  size_t * outValueLength )
+/*@ requires
+  chars(buf, max, ?buf_val) &*& buf != NULL &*&
+  0 < max &*& max <= MAX_MAX &*&
+  chars(query, max, ?query_val) &*& query != NULL &*&
+  0 < queryLength &*&
+  queryLength <= max &*&
+  integer_(outValue, sizeof(size_t), false, ?outvalue) &*& outValue != NULL &*&
+  integer_(outValueLength, sizeof(size_t), false, ?outvaluelength) &*& outValueLength != NULL;
+  @*/
+/*@ ensures
+  chars(buf, max, buf_val) &*&
+  chars(query, max, query_val) &*&
+  integer_(outValue, sizeof(size_t), false, _) &*&
+  integer_(outValueLength, sizeof(size_t), false, _);
+  @*/
+
 {
     JSONStatus_t ret = JSONSuccess;
     size_t i = 0, start = 0, queryStart = 0, value = 0, length = max;
+    //@ assume(&i != NULL);
 
     assert( ( buf != NULL ) && ( query != NULL ) );
     assert( ( outValue != NULL ) && ( outValueLength != NULL ) );
@@ -1818,6 +1835,12 @@ static JSONStatus_t multiSearch( const char * buf,
     assert( queryLength <= max );
 
     while( i < queryLength )
+      /*@ invariant
+        chars(buf, max, buf_val) &*&
+        chars(query, max, query_val) &*&
+        integer_(&i, sizeof(size_t), false, ?ival) &*& 0 <= ival &*& ival <= queryLength &*&
+        integer_(&length, sizeof(size_t), false, _);
+      @*/
     {
         bool found = false;
 
@@ -1825,6 +1848,7 @@ static JSONStatus_t multiSearch( const char * buf,
         {
             int32_t queryIndex = -1;
             i++;
+            //@ assume(&queryIndex != NULL);
 
             skipDigits( query, &i, queryLength, &queryIndex );
 
@@ -1937,6 +1961,22 @@ JSONStatus_t JSON_SearchConst( const char * buf,
                                const char ** outValue,
                                size_t * outValueLength,
                                JSONTypes_t * outType )
+/*@ requires
+  chars(buf, max, ?buf_val) &*& buf != NULL &*&
+  0 <= max &*& max <= MAX_MAX &*&
+  chars(query, max, ?query_val) &*& query != NULL &*&
+  0 <= queryLength &*&
+  pointer(outValue, _) &*&
+  integer_(outValueLength, sizeof(size_t), false, ?outvaluelength) &*&
+  integer_(outType, sizeof(JSONTypes_t), false, ?outtype);
+  @*/
+/*@ ensures
+  chars(buf, max, buf_val) &*&
+  chars(query, max, query_val) &*&
+  pointer(outValue, _) &*&
+  integer_(outValueLength, sizeof(size_t), false, _) &*&
+  integer_(outType, sizeof(JSONTypes_t), false, _);
+  @*/
 {
     JSONStatus_t ret;
     size_t value = 0U;
