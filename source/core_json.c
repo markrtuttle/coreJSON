@@ -361,8 +361,6 @@ static uint8_t hexToInt( char c )
 //@ requires true;
 //@ ensures 0 <= result &*& result <= 16;
 {
-    if (c < 0) return NOT_A_HEX_CHAR;
-
     char_ n;
 
     n.c = c;
