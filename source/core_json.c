@@ -1855,6 +1855,7 @@ static JSONStatus_t multiSearch( const char * buf,
                                  size_t queryLength,
                                  size_t * outValue,
                                  size_t * outValueLength )
+#if 0
 /*@ requires
   chars(buf, max, ?buf_val) &*& buf != NULL &*&
   0 < max &*& max <= MAX_MAX &*&
@@ -1870,7 +1871,7 @@ static JSONStatus_t multiSearch( const char * buf,
   integer_(outValue, sizeof(size_t), false, _) &*&
   integer_(outValueLength, sizeof(size_t), false, _);
   @*/
-
+#endif
 {
     JSONStatus_t ret = JSONSuccess;
     size_t i = 0, start = 0, queryStart = 0, value = 0, length = max;
@@ -1886,7 +1887,8 @@ static JSONStatus_t multiSearch( const char * buf,
         chars(buf, max, buf_val) &*&
         chars(query, max, query_val) &*&
         integer_(&i, sizeof(size_t), false, ?ival) &*& 0 <= ival &*& ival <= queryLength &*&
-        integer_(&length, sizeof(size_t), false, _);
+        integer_(&length, sizeof(size_t), false, ?length_val) &*& 0 <= length_val &*& length_val <= max &*&
+        start < max;
       @*/
     {
         bool found = false;
@@ -1908,7 +1910,10 @@ static JSONStatus_t multiSearch( const char * buf,
 
             i++;
 
+            //@ chars_split(buf, start);
+            //@ chars_split(buf + start, length);
             found = arraySearch( &buf[ start ], length, ( uint32_t ) queryIndex, &value, &length );
+            //@ chars_join(buf, start);
         }
         else
         {
@@ -2008,6 +2013,7 @@ JSONStatus_t JSON_SearchConst( const char * buf,
                                const char ** outValue,
                                size_t * outValueLength,
                                JSONTypes_t * outType )
+#if 0
 /*@ requires
   chars(buf, max, ?buf_val) &*& buf != NULL &*&
   0 <= max &*& max <= MAX_MAX &*&
@@ -2024,6 +2030,7 @@ JSONStatus_t JSON_SearchConst( const char * buf,
   integer_(outValueLength, sizeof(size_t), false, _) &*&
   integer_(outType, sizeof(JSONTypes_t), false, _);
   @*/
+#endif
 {
     JSONStatus_t ret;
     size_t value = 0U;
