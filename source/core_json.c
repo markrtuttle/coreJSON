@@ -85,9 +85,6 @@ typedef union
     uint8_t u;
 } char_;
 
-//#define MAX_MAX (SIZE_MAX - 10)
-#define MAX_MAX SIZE_MAX
-
 #if ( CHAR_MIN == 0 )
     #define isascii_( x )    ( ( x ) <= '\x7F' )
 #else
@@ -251,7 +248,7 @@ static bool skipUTF8MultiByte( const char * buf,
   chars(buf, max, ?buf_val) &*& buf != NULL &*& head(buf_val) > 0 &*&
   integer_(start, sizeof(size_t), false, ?start_val0) &*& start != NULL &*&
     0 <= start_val0 &*& start_val0 <= max &*&
-  0 < max &*& max <= MAX_MAX &*&
+  0 < max &*&
   start_val0 < max && !isascii_( head(buf_val)  );
 @*/
 /*@ ensures
@@ -441,7 +438,7 @@ ensures
 
     i = *start;
 #define HEX_ESCAPE_LENGTH    ( 6U )   /* e.g., \u1234 */
-    if (*start > INT_MAX - HEX_ESCAPE_LENGTH) return false;
+    if (*start > INT_MAX - HEX_ESCAPE_LENGTH) return false; // bug?
     end = i + HEX_ESCAPE_LENGTH;
 
     if( ( end < max ) && ( buf[ i ] == '\\' ) && ( buf[ i + 1U ] == 'u' ) )
@@ -1494,7 +1491,7 @@ JSONStatus_t JSON_Validate( const char * buf,
                             size_t max )
 /*@ requires
   chars(buf, max, ?buf_val) &*& buf != NULL &*&
-  0 < max &*& max <= MAX_MAX;
+  0 < max;
   @*/
 /*@ ensures
   chars(buf, max, buf_val);
@@ -1926,7 +1923,7 @@ static JSONStatus_t multiSearch( const char * buf,
 #if 0
 /*@ requires
   chars(buf, max, ?buf_val) &*& buf != NULL &*&
-  0 < max &*& max <= MAX_MAX &*&
+  0 < max &*&
   chars(query, max, ?query_val) &*& query != NULL &*&
   0 < queryLength &*&
   queryLength <= max &*&
@@ -2084,7 +2081,7 @@ JSONStatus_t JSON_SearchConst( const char * buf,
 #if 0
 /*@ requires
   chars(buf, max, ?buf_val) &*& buf != NULL &*&
-  0 <= max &*& max <= MAX_MAX &*&
+  0 <= max &*&
   chars(query, max, ?query_val) &*& query != NULL &*&
   0 <= queryLength &*&
   pointer(outValue, _) &*&
