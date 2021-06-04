@@ -33,6 +33,7 @@
 
 /** @cond DO_NOT_DOCUMENT */
 
+//BUG: These lemmas are false!
 /*@
 lemma void add_subbuffer(char *buffer, int offset, int length);
 requires
@@ -55,16 +56,33 @@ requires
 ensures
   chars(buffer, buffer_len, buffer_val)
   ;
+
+// Verifast treats a union as an array of chars, and when accessing a
+// union member whose type is anything other than char, you first need
+// to convert the array of chars to the desired type of chunk.
+//
+// The following lemmas are used in conjunction with a char/uint8_t
+// union called char_.  They assume that char <-> uint8_t casts do
+// nothing but change the interpretation of the eight bits stored in a
+// byte.
+
+lemma void char_to_uint8(char *c);
+  requires chars(c, 1, cons(?c_val, nil));
+  ensures integer_(c, 1, false, c_val);
+
+lemma void uint8_to_char(uint8_t *i);
+  requires integer_(i, 1, false, ?i_val);
+  ensures chars((int8_t *)i, 1, cons(i_val, nil));
+
 @*/
 
+
 /* A compromise to satisfy both MISRA and CBMC */
-#if 0
 typedef union
 {
     char c;
     uint8_t u;
 } char_;
-#endif
 
 #define MAX_MAX (SIZE_MAX - 10)
 
@@ -225,6 +243,17 @@ static bool shortestUTF8( size_t length,
 static bool skipUTF8MultiByte( const char * buf,
                                size_t * start,
                                size_t max )
+/*@ requires
+  chars(buf, max, ?buf_val) &*& buf != NULL &*& head(buf_val) > 0 &*&
+  integer_(start, sizeof(size_t), false, ?start_val0) &*& start != NULL &*&
+    0 <= start_val0 &*& start_val0 <= max &*&
+  0 < max &*& max <= MAX_MAX &*&
+  start_val0 < max && !isascii_( head(buf_val)  );
+@*/
+/*@ ensures
+  chars(buf, max, buf_val) &*&
+  integer_(start, sizeof(size_t), false, ?start_val1) &*& start_val0 <= start_val1 &*& start_val1 <= max;
+@*/
 {
     bool ret = false;
     size_t i, bitCount, j;
@@ -239,6 +268,7 @@ static bool skipUTF8MultiByte( const char * buf,
 
     c.c = buf[ i ];
 
+    //@ char_to_uint8(&c.c);
     if( ( c.u > 0xC1U ) && ( c.u < 0xF5U ) )
     {
         bitCount = countHighBits( c.u );
@@ -255,7 +285,9 @@ static bool skipUTF8MultiByte( const char * buf,
                 break;
             }
 
+            //@ uint8_to_char(&c.u);
             c.c = buf[ i ];
+            //@ char_to_uint8(&c.c);
 
             /* Additional bytes must match 10xxxxxx. */
             if( ( c.u & 0xC0U ) != 0x80U )
@@ -326,21 +358,28 @@ static bool skipUTF8( const char * buf,
  */
 #define NOT_A_HEX_CHAR    ( 0x10U )
 static uint8_t hexToInt( char c )
-#if 0
+//@ requires true;
+//@ ensures 0 <= result &*& result <= 16;
 {
-    union char_ n;
+    if (c < 0) return NOT_A_HEX_CHAR;
+
+    char_ n;
 
     n.c = c;
 
     if( ( c >= 'a' ) && ( c <= 'f' ) )
     {
         n.c -= 'a';
+        //@ char_to_uint8(&n.c);
         n.u += 10U;
+        //@ uint8_to_char(&n.u);
     }
     else if( ( c >= 'A' ) && ( c <= 'F' ) )
     {
         n.c -= 'A';
+        //@ char_to_uint8(&n.c);
         n.u += 10U;
+        //@ uint8_to_char(&n.u);
     }
     else if( isdigit_( c ) )
     {
@@ -348,16 +387,13 @@ static uint8_t hexToInt( char c )
     }
     else
     {
+        //@ char_to_uint8(&n.c);
         n.u = NOT_A_HEX_CHAR;
+        //@ uint8_to_char(&n.u);
     }
 
+    //@ char_to_uint8(&n.c);
     return n.u;
-}
-#endif
-//@ requires true;
-//@ ensures 0 <= result &*& result <= 16;
-{
-  return 0;
 }
 
 /**
