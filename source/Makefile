@@ -1,5 +1,5 @@
 SRC = core_json.c
-ARGS = -target 32bit -I include
+ARGS = -target 32bit -I include -prover z3v4.5
 VFDEP = /usr/local/vfdeps-0e0aebc
 
 verifast:

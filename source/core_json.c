@@ -126,14 +126,17 @@ requires
 ensures
   chars(buf, max, buf_val) &*&
   integer_(start, sizeof(size_t), false, ?start_val1) &*&
-  start_val0 <= start_val1;
+  start_val0 <= start_val1 && implies(start_val0 < max, start_val1 <= max);
 @*/
 {
     size_t i;
     assert( ( buf != NULL ) && ( start != NULL ) && ( max > 0U ) );
 
     for( i = *start; i < max; i++ )
-    //@ invariant chars(buf, max, buf_val) &*& start_val0 <= i;
+    /*@ invariant
+          chars(buf, max, buf_val) &*&
+          start_val0 <= i &&implies(start_val0 < max, i <= max);
+    @*/
     {
         if( !isspace_( buf[ i ] ) )
         {
@@ -153,6 +156,7 @@ ensures
  * @return the count
  */
 static size_t countHighBits( uint8_t c )
+#if 0
 {
     uint8_t n = c;
     size_t i = 0;
@@ -164,6 +168,12 @@ static size_t countHighBits( uint8_t c )
     }
 
     return i;
+}
+#endif
+//@ requires true;
+//@ ensures 1<= result && result <= 7;
+{
+  return 1;
 }
 
 /**
@@ -244,16 +254,32 @@ static bool shortestUTF8( size_t length,
 static bool skipUTF8MultiByte( const char * buf,
                                size_t * start,
                                size_t max )
+#if 0
 /*@ requires
-  chars(buf, max, ?buf_val) &*& buf != NULL &*& head(buf_val) > 0 &*&
+  chars(buf, max, ?buf_val) &*& buf != NULL &*&
+  buf_val == cons(?c0, ?c00) &*&
+  c0 > 0 &*&
   integer_(start, sizeof(size_t), false, ?start_val0) &*& start != NULL &*&
     0 <= start_val0 &*& start_val0 <= max &*&
-  0 < max &*&
-  start_val0 < max && !isascii_( head(buf_val)  );
+  0 < max &*& start_val0 < max &*&
+  start_val0 < max && !isascii_( c0  );
 @*/
 /*@ ensures
   chars(buf, max, buf_val) &*&
   integer_(start, sizeof(size_t), false, ?start_val1) &*& start_val0 <= start_val1 &*& start_val1 <= max;
+@*/
+#endif
+/*@
+requires
+  buf != NULL &*& start != NULL &*& max > 0 &*&
+  chars(buf, max, ?buf_val) &*&
+  integer_(start, sizeof(size_t), false, ?start_val0)  &*&
+  0 <= start_val0 && start_val0 < max && !isascii_(nth(start_val0, buf_val));
+@*/
+/*@
+ensures
+  chars(buf, max, buf_val) &*&
+  integer_(start, sizeof(size_t), false, ?start_val1);
 @*/
 {
     bool ret = false;
@@ -269,8 +295,7 @@ static bool skipUTF8MultiByte( const char * buf,
 
     c.c = buf[ i ];
 
-    //@ char_to_uint8(&c.c);
-    if( ( c.u > 0xC1U ) && ( c.u < 0xF5U ) )
+    if( ( c.u > 0xC1U ) && ( c.u < 0xF5U ) )  // bug
     {
         bitCount = countHighBits( c.u );
         value = ( ( uint32_t ) c.u ) & ( ( ( uint32_t ) 1 << ( 7U - bitCount ) ) - 1U );
