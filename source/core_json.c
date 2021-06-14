@@ -36,26 +36,26 @@
 //BUG: These lemmas are false!
 /*@
 lemma void add_subbuffer(char *buffer, int offset, int length);
-requires
-  chars(buffer, ?buffer_len, ?buffer_val)
-  &*& 0 <= offset &*& offset <= buffer_len
-  &*& 0 <= length &*& length <= buffer_len - offset
-  ;
-ensures
-  chars(buffer, buffer_len, buffer_val)
-  &*& chars(buffer+offset, length, take(length, drop(offset, buffer_val)))
-  ;
+  requires
+    chars(buffer, ?buffer_len, ?buffer_val)
+    &*& 0 <= offset &*& offset <= buffer_len
+    &*& 0 <= length &*& length <= buffer_len - offset
+    ;
+  ensures
+    chars(buffer, buffer_len, buffer_val)
+    &*& chars(buffer+offset, length, take(length, drop(offset, buffer_val)))
+    ;
 
 lemma void del_subbuffer(char *buffer, int offset, int length);
-requires
-  chars(buffer, ?buffer_len, ?buffer_val)
-  &*& chars(buffer+offset, _, _)
-  &*& 0 <= offset
-  &*& offset <= buffer_len
-  ;
-ensures
-  chars(buffer, buffer_len, buffer_val)
-  ;
+  requires
+    chars(buffer, ?buffer_len, ?buffer_val)
+    &*& chars(buffer+offset, _, _)
+    &*& 0 <= offset
+    &*& offset <= buffer_len
+    ;
+  ensures
+    chars(buffer, buffer_len, buffer_val)
+    ;
 
 // Verifast treats a union as an array of chars, and when accessing a
 // union member whose type is anything other than char, you first need
@@ -121,13 +121,13 @@ requires
   chars(buf, max, ?buf_val) &*&
   integer_(start, sizeof(size_t), false, ?start_val0) &*&
   0 <= start_val0;
-@*/
+  @*/
 /*@
 ensures
   chars(buf, max, buf_val) &*&
   integer_(start, sizeof(size_t), false, ?start_val1) &*&
   start_val0 <= start_val1 && implies(start_val0 < max, start_val1 <= max);
-@*/
+  @*/
 {
     size_t i;
     assert( ( buf != NULL ) && ( start != NULL ) && ( max > 0U ) );
@@ -135,7 +135,7 @@ ensures
     for( i = *start; i < max; i++ )
     /*@ invariant
           chars(buf, max, buf_val) &*&
-          start_val0 <= i &&implies(start_val0 < max, i <= max);
+          start_val0 <= i && implies(start_val0 < max, i <= max);
     @*/
     {
         if( !isspace_( buf[ i ] ) )
@@ -171,7 +171,7 @@ static size_t countHighBits( uint8_t c )
 }
 #endif
 //@ requires true;
-//@ ensures 1<= result && result <= 7;
+//@ ensures 1 <= result && result <= 7;
 {
   return 1;
 }
@@ -257,7 +257,8 @@ static bool skipUTF8MultiByte( const char * buf,
                                size_t * start,
                                size_t max )
 #if 0
-/*@ requires
+/*@
+requires
   chars(buf, max, ?buf_val) &*& buf != NULL &*&
   buf_val == cons(?c0, ?c00) &*&
   c0 > 0 &*&
@@ -265,11 +266,12 @@ static bool skipUTF8MultiByte( const char * buf,
     0 <= start_val0 &*& start_val0 <= max &*&
   0 < max &*& start_val0 < max &*&
   start_val0 < max && !isascii_( c0  );
-@*/
-/*@ ensures
+  @*/
+/*@
+ensures
   chars(buf, max, buf_val) &*&
   integer_(start, sizeof(size_t), false, ?start_val1) &*& start_val0 <= start_val1 &*& start_val1 <= max;
-@*/
+  @*/
 #endif
 #if 0
 /*@
@@ -278,12 +280,12 @@ requires
   chars(buf, max, ?buf_val) &*&
   integer_(start, sizeof(size_t), false, ?start_val0)  &*&
   0 <= start_val0 && start_val0 < max && !isascii_(nth(start_val0, buf_val));
-@*/
+  @*/
 /*@
 ensures
   chars(buf, max, buf_val) &*&
   integer_(start, sizeof(size_t), false, ?start_val1);
-@*/
+  @*/
 #endif
 {
     bool ret = false;
@@ -449,14 +451,14 @@ requires
   integer_(start, sizeof(size_t), false, ?start_val0) &*&
   integer_(outValue, sizeof(uint16_t), false, _) &*&
   0 <= start_val0;
-@*/
+  @*/
 /*@
 ensures
   chars(buf, max, buf_val) &*&
   integer_(start, sizeof(size_t), false, ?start_val1) &*&
   integer_(outValue, sizeof(uint16_t), false, _) &*&
-  start_val0 <= start_val1;
-@*/
+  start_val0 <= start_val1 && implies(result, start_val1 <= max);
+  @*/
 {
     bool ret = false;
     size_t i, end;
@@ -532,18 +534,19 @@ ensures
 static bool skipHexEscape( const char * buf,
                            size_t * start,
                            size_t max )
-/*@ requires
+/*@
+requires
   buf != NULL && start != NULL && max > 0 &*&
   chars(buf, max, ?buf_val) &*&
   integer_(start, sizeof(size_t), false, ?start_val0) &*&
   0 <= start_val0;
-@*/
+  @*/
 /*@
 ensures
   chars(buf, max, buf_val) &*&
   integer_(start, sizeof(size_t), false, ?start_val1) &*&
-  start_val0 <= start_val1;
-@*/
+  start_val0 <= start_val1 && implies(result, start_val1 <= max);
+  @*/
 {
     bool ret = false;
     size_t i;
@@ -604,13 +607,13 @@ requires
   chars(buf, max, ?buf_val) &*&
   integer_(start, sizeof(size_t), false, ?start_val0) &*&
   0 <= start_val0;
-@*/
+  @*/
 /*@
 ensures
   chars(buf, max, buf_val) &*&
   integer_(start, sizeof(size_t), false, ?start_val1) &*&
-  start_val0 <= start_val1;
-@*/
+  start_val0 <= start_val1 && implies(result, start_val1 <= max);
+  @*/
 {
     bool ret = false;
     size_t i;
@@ -684,14 +687,14 @@ requires
   buf != NULL && start != NULL && 0 < max &*&
   chars(buf, max, ?buf_val) &*&
   integer_(start, sizeof(size_t), false, ?start_val0) &*&
-  0 <= start_val0; // FIXME
-@*/
+  0 <= start_val0;
+  @*/
 /*@
 ensures
   chars(buf, max, buf_val) &*&
   integer_(start, sizeof(size_t), false, ?start_val1) &*&
   start_val0 <= start_val1 && implies(result, start_val0 < start_val1);
-@*/
+  @*/
 {
     bool ret = false;
     size_t i;
@@ -759,13 +762,14 @@ ensures
 static bool strnEq( const char * a,
                     const char * b,
                     size_t n )
-/*@ requires
-  chars(a, n, ?a_val) &*& a != NULL &*&
-  chars(b, n, ?b_val) &*& b != NULL;
+/*@
+requires
+  a != NULL && b != NULL &*&
+  chars(a, n, ?a_val) &*& chars(b, n, ?b_val);
   @*/
-/*@ ensures
-  chars(a, n, a_val) &*&
-  chars(b, n, b_val);
+/*@
+ensures
+  chars(a, n, a_val) &*& chars(b, n, b_val);
   @*/
 {
     size_t i;
@@ -808,14 +812,14 @@ requires
   integer_(start, sizeof(size_t), false, ?start_val0) &*&
   chars(literal, length, ?literal_val) &*&
   0 <= start_val0;
-@*/
+  @*/
 /*@
 ensures
   chars(buf, max, buf_val) &*&
   integer_(start, sizeof(size_t), false, ?start_val1) &*&
   chars(literal, length, literal_val) &*&
   start_val0 <= start_val1 && implies(result, length == 0 || start_val0 < start_val1);
-@*/
+  @*/
 {
     bool ret = false;
 
@@ -864,7 +868,7 @@ ensures
   chars(buf, max, buf_val) &*&
   integer_(start, sizeof(size_t), false, ?start_val1) &*&
   start_val0 <= start_val1 && implies(result, start_val0 < start_val1);
-@*/
+  @*/
 {
     bool ret = false;
 
@@ -922,7 +926,7 @@ static bool skipDigits( const char * buf,
   integer_(start, sizeof(size_t), false, ?start_val1) &*&
   (outValue != NULL ? integer_(outValue, sizeof(int32_t), true, ?outvalue1) &*& outvalue1 <= INT_MAX : true) &*& // FIXME: remove INT_MAX?
   start_val0 <= start_val1 && implies(result, start_val0 < start_val1);
-@*/
+  @*/
 
 {
     bool ret = false;
@@ -985,14 +989,14 @@ requires
   buf != NULL && start != NULL && 0 < max &*&
   chars(buf, max, ?buffer) &*&
   integer_(start, sizeof(size_t), false, ?start_val0) &*&
-  0 <= start_val0; // FIXME: Why does verifast require this?
-@*/
+  0 <= start_val0;
+  @*/
 /*@
 ensures
   chars(buf, max, buffer) &*&
   integer_(start, sizeof(size_t), false, ?start_val1) &*&
   start_val0 <= start_val1;
-@*/
+  @*/
 {
     size_t i;
 
@@ -1028,13 +1032,13 @@ requires
   chars(buf, max, ?buffer) &*&
   integer_(start, sizeof(size_t), false, ?start_val0) &*&
   0 <= start_val0;
-@*/
+  @*/
 /*@
 ensures
   chars(buf, max, buffer) &*&
   integer_(start, sizeof(size_t), false, ?start_val1) &*&
   start_val0 <= start_val1;
-@*/
+  @*/
 {
     size_t i;
 
@@ -1078,13 +1082,13 @@ requires
   chars(buf, max, ?buf_val) &*&
   integer_(start, sizeof(size_t), false, ?start_val0) &*&
   0 <= start_val0;
-@*/
+  @*/
 /*@
 ensures
   chars(buf, max, buf_val) &*&
   integer_(start, sizeof(size_t), false, ?start_val1) &*&
   start_val0 <= start_val1 && implies(result, start_val0 < start_val1);
-@*/
+  @*/
 {
     bool ret = false;
     size_t i;
@@ -1149,13 +1153,13 @@ requires
   chars(buf, max, ?buf_val) &*&
   integer_(start, sizeof(size_t), false, ?start_val0) &*&
   0 <= start_val0;
-@*/
+  @*/
 /*@
 ensures
   chars(buf, max, buf_val) &*&
   integer_(start, sizeof(size_t), false, ?start_val1) &*&
   start_val0 <= start_val1 && implies(result, start_val0 < start_val1);
-@*/
+  @*/
 {
     bool ret = false;
 
@@ -1192,13 +1196,13 @@ requires
   chars(buf, max, ?buf_val) &*&
   integer_(start, sizeof(size_t), false, ?start_val0) &*&
   0 <= start_val0;
-@*/
+  @*/
 /*@
 ensures
   chars(buf, max, buf_val) &*&
   integer_(start, sizeof(size_t), false, ?start_val1) &*&
   start_val0 <= start_val1 && implies(result, start_val0 < start_val1);
-@*/
+  @*/
 {
     bool ret = false;
     size_t i;
@@ -1242,7 +1246,7 @@ requires
   chars(buf, max, ?buf_val) &*&
   integer_(start, sizeof(size_t), false, ?start_val0) &*&
   0 <= start_val0;
-@*/
+  @*/
 /*@
 ensures
   chars(buf, max, buf_val) &*&
@@ -1298,13 +1302,13 @@ requires
   chars(buf, max, ?buf_val) &*&
   integer_(start, sizeof(size_t), false, ?start_val0) &*&
   0 <= start_val0;
-@*/
+  @*/
 /*@
 ensures
   chars(buf, max, buf_val) &*&
   integer_(start, sizeof(size_t), false, ?start_val1) &*&
   start_val0 <= start_val1;
-@*/
+  @*/
 {
     size_t i;
     bool comma;
@@ -1377,13 +1381,13 @@ requires
   chars(buf, max, ?buf_val) &*&
   integer_(start, sizeof(size_t), false, ?start_val0) &*&
   0 <= start_val0;
-@*/
+  @*/
 /*@
 ensures
   chars(buf, max, buf_val) &*&
   integer_(start, sizeof(size_t), false, ?start_val1) &*&
   start_val0 <= start_val1;
-@*/
+  @*/
 {
     assert( isOpenBracket_( mode ) );
 
@@ -1429,7 +1433,7 @@ requires
   chars(buf, max, ?buf_val) &*&
   integer_(start, sizeof(size_t), false, ?start_val0) &*&
   0 <= start_val0;
-@*/
+  @*/
 /*@
 ensures
   chars(buf, max, buf_val) &*&
@@ -1522,13 +1526,8 @@ ensures
  */
 JSONStatus_t JSON_Validate( const char * buf,
                             size_t max )
-/*@ requires
-  chars(buf, max, ?buf_val) &*& buf != NULL &*&
-  0 < max;
-  @*/
-/*@ ensures
-  chars(buf, max, buf_val);
-  @*/
+//@ requires chars(buf, max, ?buf_val);
+//@ ensures  chars(buf, max, buf_val);
 {
     JSONStatus_t ret;
     size_t i = 0;
@@ -1604,7 +1603,7 @@ requires
   integer_(value, sizeof(size_t), false, _) &*&
   integer_(valueLength, sizeof(size_t), false, _) &*&
   0 <= start_val0;
-@*/
+  @*/
 /*@
 ensures
   chars(buf, max, buf_val) &*&
@@ -1612,7 +1611,7 @@ ensures
   integer_(value, sizeof(size_t), false, _) &*&
   integer_(valueLength, sizeof(size_t), false, _) &*&
   start_val0 <= start_val1 && implies(result, start_val0 < start_val1);
-@*/
+  @*/
 {
     bool ret = true;
     size_t i, valueStart;
@@ -1824,7 +1823,7 @@ ensures
   chars(buf, max, buf_val) &*&
   integer_(outValue, sizeof(size_t), false, _) &*&
   integer_(outValueLength, sizeof(size_t), false, _);
-@*/
+  @*/
 {
     bool ret = false;
     size_t i = 0, value = 0, valueLength = 0;
@@ -1954,7 +1953,8 @@ static JSONStatus_t multiSearch( const char * buf,
                                  size_t * outValue,
                                  size_t * outValueLength )
 #if 0
-/*@ requires
+/*@
+requires
   chars(buf, max, ?buf_val) &*& buf != NULL &*&
   0 < max &*&
   chars(query, max, ?query_val) &*& query != NULL &*&
@@ -1963,7 +1963,8 @@ static JSONStatus_t multiSearch( const char * buf,
   integer_(outValue, sizeof(size_t), false, ?outvalue) &*& outValue != NULL &*&
   integer_(outValueLength, sizeof(size_t), false, ?outvaluelength) &*& outValueLength != NULL;
   @*/
-/*@ ensures
+/*@
+ensures
   chars(buf, max, buf_val) &*&
   chars(query, max, query_val) &*&
   integer_(outValue, sizeof(size_t), false, _) &*&
@@ -2112,7 +2113,8 @@ JSONStatus_t JSON_SearchConst( const char * buf,
                                size_t * outValueLength,
                                JSONTypes_t * outType )
 #if 0
-/*@ requires
+/*@
+requires
   chars(buf, max, ?buf_val) &*& buf != NULL &*&
   0 <= max &*&
   chars(query, max, ?query_val) &*& query != NULL &*&
@@ -2121,7 +2123,8 @@ JSONStatus_t JSON_SearchConst( const char * buf,
   integer_(outValueLength, sizeof(size_t), false, ?outvaluelength) &*&
   integer_(outType, sizeof(JSONTypes_t), false, ?outtype);
   @*/
-/*@ ensures
+/*@
+ensures
   chars(buf, max, buf_val) &*&
   chars(query, max, query_val) &*&
   pointer(outValue, _) &*&
