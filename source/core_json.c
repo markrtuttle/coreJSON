@@ -271,6 +271,7 @@ static bool skipUTF8MultiByte( const char * buf,
   integer_(start, sizeof(size_t), false, ?start_val1) &*& start_val0 <= start_val1 &*& start_val1 <= max;
 @*/
 #endif
+#if 0
 /*@
 requires
   buf != NULL &*& start != NULL &*& max > 0 &*&
@@ -283,6 +284,7 @@ ensures
   chars(buf, max, buf_val) &*&
   integer_(start, sizeof(size_t), false, ?start_val1);
 @*/
+#endif
 {
     bool ret = false;
     size_t i, bitCount, j;
@@ -943,7 +945,7 @@ static bool skipDigits( const char * buf,
         {
             int8_t n = ( int8_t ) hexToInt( buf[ i ] );
 
-            if( value <= MAX_FACTOR )
+            if( value <= 214748353 /* MAX_FACTOR*/ )
             {
                 value = ( value * 10 ) + n;
             }
