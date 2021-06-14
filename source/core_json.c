@@ -195,6 +195,8 @@ static size_t countHighBits( uint8_t c )
  */
 static bool shortestUTF8( size_t length,
                           uint32_t value )
+//@ requires 2 <= length && length <= 4;
+//@ ensures true;
 {
     bool ret = false;
     uint32_t min, max;
@@ -204,17 +206,17 @@ static bool shortestUTF8( size_t length,
     switch( length )
     {
         case 2:
-            min = ( uint32_t ) 1 << 7U;
-            max = ( ( uint32_t ) 1 << 11U ) - 1U;
+            min = ( uint32_t ) 0x00000080U /* 1 << 7U */;
+            max = ( ( uint32_t ) 0x00000800U /* 1 << 11U */) - 1U;
             break;
 
         case 3:
-            min = ( uint32_t ) 1 << 11U;
-            max = ( ( uint32_t ) 1 << 16U ) - 1U;
+            min = ( uint32_t ) 0x00000800U /* 1 << 11U */;
+            max = ( ( uint32_t ) 0x00010000U /* 1 << 16U */) - 1U;
             break;
 
         default:
-            min = ( uint32_t ) 1 << 16U;
+            min = ( uint32_t ) 0x00010000U /* 1 << 16U */;
             max = 0x10FFFFU;
             break;
     }
