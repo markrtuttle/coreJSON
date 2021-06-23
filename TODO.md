@@ -1,5 +1,5 @@
 D    skipSpace
-I*   countHighBits
+D    countHighBits
      shortestUTF8
 I    skipUTF8MultiByte
 I*   skipUTF8
@@ -9,7 +9,7 @@ D    skipHexEscape
 D    skipEscape
 D    skipString
 D    strnEq
-D*   skipLiteral
+D    skipLiteral
 D*   skipAnyLiteral
 D    skipDigits
 D    skipDecimals
