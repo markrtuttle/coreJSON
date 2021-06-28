@@ -285,7 +285,6 @@ ensures
   integer_(start, sizeof(size_t), false, ?start_val1) &*& start_val0 <= start_val1 &*& start_val1 <= max;
   @*/
 #endif
-#if 0
 /*@
 requires
   buf != NULL &*& start != NULL &*& max > 0 &*&
@@ -298,7 +297,6 @@ ensures
   chars(buf, max, buf_val) &*&
   integer_(start, sizeof(size_t), false, ?start_val1);
   @*/
-#endif
 {
     bool ret = false;
     size_t i, bitCount, j;
