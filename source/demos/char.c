@@ -117,11 +117,12 @@ ensures true;
   assert -128 == int8_from_uint8(0x80U);
 }
 
-lemma_auto void unsigned_from_signed();
+lemma void unsigned_from_signed();
   requires integer_(?s, 1, true, ?s_val);
-  ensures integer_(s, 1, false, uint8_from_int8(s_val));
+  // ensures integer_(s, 1, false, uint8_from_int8(s_val));
+  ensures integer_(s, 1, true, uint8_from_int8(s_val));
 
-lemma_auto void signed_from_unsigned();
+lemma void signed_from_unsigned();
   requires integer_(?u, 1, false, ?u_val);
   ensures integer_(u, 1, true, int8_from_uint8(u_val));
 
@@ -133,17 +134,19 @@ int main()
 //@ ensures true;
 {
   int8_t s = (int8_t) -1;
-  uint8_t u;
+  uint8_t u = (uint8_t) 1;
 
-  int8_t *sptr = &s;
-  uint8_t *uptr = &u;
-
-  //@ open character(_,_);
-  //@ assert integer_(_,_,_,_);
-
-  *uptr = (uint8_t) *sptr;
-
-  //@ assert u == 0xFFU;
+  true;
+#if VERIFAST
+  // Shows that signed bit of integer_ is meaningless
+  //@ open character(&s,_);
+  //@ unsigned_from_signed();
+  //@ close character(&s,_);
+#else
+  // Shows that verifast cast does not match c semantics (not just value filter)
+#endif
+  u = (uint8_t) s;
+  assert( u == 0xFFU );
 
   return 0;
 }
