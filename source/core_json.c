@@ -77,6 +77,34 @@ lemma uint8_t define_low_bits_shifted_one_bit_left(uint8_t n)
   return (n & 0x7FU) << 1U;
 }
 
+// Lemmas for skipUTF8MultiByte
+
+
+lemma uint8_t define_mask(size_t bitCount)
+  requires 0 <= bitCount && bitCount < 8;
+  ensures result == ((1 << (7U - bitCount)) - 1) &&
+          0 <= result && result <= 0xFFU;
+{
+  shiftleft_def(1, nat_of_int( 7U - bitCount ));
+  return (1 << (7U - bitCount)) - 1;
+}
+
+
+lemma uint8_t define_value(uint8_t cu, size_t bitCount)
+  requires 0x00U <= cu && cu <= 0xFFU &&
+           0 <= bitCount && bitCount < 8;
+  ensures result == (cu & ((1 << (7U - bitCount)) - 1)) &&
+           0 <= result && result <= 0xFFU;
+{
+  define_mask(bitCount);
+  uint8_t mask = (1 << (7U - bitCount)) - 1;
+
+  Z z_cu = Z_of_uint8(cu);
+  Z z_mask = Z_of_uint8(mask);
+  bitand_def(cu, z_cu, mask, z_mask);
+  return cu & mask;
+}
+
 @*/
 
 #define implies(a,b) (!(a) || (b))
@@ -314,7 +342,9 @@ ensures
     if( ( c.u > 0xC1U ) && ( c.u < 0xF5U ) )  // bug
     {
         bitCount = countHighBits( c.u );
-        value = ( ( uint32_t ) c.u ) & ( ( ( uint32_t ) 1 << ( 7U - bitCount ) ) - 1U );
+        //@ define_mask(bitCount);
+        //@ define_value(c.u, bitCount);
+        value = ( c.u ) & ( ( 1U << ( 7U - bitCount ) ) - 1U );
 
         /* The bit count is 1 greater than the number of bytes,
          * e.g., when j is 2, we skip one more byte. */
