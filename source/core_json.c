@@ -58,7 +58,7 @@ lemma void uint8_to_char(uint8_t *i);
 
 lemma uint8_t define_high_bit_is_high(uint8_t n)
   requires 0 <= n && n <= 0xFF;
-  ensures result == (n & 0x80) && ((result != 0U) == (n >= 0x80));
+  ensures result == (n & 0x80) && (result == 0U ? n < 0x80U : n >= 0x80U);
 {
   Z z_n = Z_of_uint8(n);
   Z z_mask = Z_of_uint8(0x80U);
@@ -188,7 +188,7 @@ ensures
  */
 static size_t countHighBits( uint8_t c )
 //@ requires 0 <= c && c <= 0xFFU;
-//@ ensures 0 <= result && result <= 8 && implies(c < 0xFFU, result < 8);
+//@ ensures 0 <= result && result <= 8 && implies(c < 0xFFU, result < 8) && implies (c >= 0xC0U, result >= 2);
 {
     uint8_t n = c;
     size_t i = 0;
@@ -196,14 +196,14 @@ static size_t countHighBits( uint8_t c )
     while( ( n & 0x80U ) != 0U )
     /*@
       invariant
-        ((i == 0 && (c < 0xFFU ? n < 0xFFU : n <= 0xFFU)) ||
-         (i == 1 && (c < 0xFFU ? n < 0xFEU : n <= 0xFEU)) ||
-         (i == 2 && (c < 0xFFU ? n < 0xFCU : n <= 0xFCU)) ||
-         (i == 3 && (c < 0xFFU ? n < 0xF8U : n <= 0xF8U)) ||
-         (i == 4 && (c < 0xFFU ? n < 0xF0U : n <= 0xF0U)) ||
-         (i == 5 && (c < 0xFFU ? n < 0xE0U : n <= 0xE0U)) ||
-         (i == 6 && (c < 0xFFU ? n < 0xC0U : n <= 0xC0U)) ||
-         (i == 7 && (c < 0xFFU ? n < 0x80U : n <= 0x80U)) ||
+        ((i == 0 && n <= 0xFFU && implies(c < 0xFFU, n < 0xFFU)) && implies(c >= 0xC0U, n >= 0xC0U) ||
+         (i == 1 && n <= 0xFEU && implies(c < 0xFFU, n < 0xFEU)) && implies(c >= 0xC0U, n >= 0x80U) ||
+         (i == 2 && n <= 0xFCU && implies(c < 0xFFU, n < 0xFCU)) && implies(c >= 0xC0U, n >= 0x00U) ||
+         (i == 3 && n <= 0xF8U && implies(c < 0xFFU, n < 0xF8U)) && implies(c >= 0xC0U, n >= 0x00U) ||
+         (i == 4 && n <= 0xF0U && implies(c < 0xFFU, n < 0xF0U)) && implies(c >= 0xC0U, n >= 0x00U) ||
+         (i == 5 && n <= 0xE0U && implies(c < 0xFFU, n < 0xE0U)) && implies(c >= 0xC0U, n >= 0x00U) ||
+         (i == 6 && n <= 0xC0U && implies(c < 0xFFU, n < 0xC0U)) && implies(c >= 0xC0U, n >= 0x00U) ||
+         (i == 7 && n <= 0x80U && implies(c < 0xFFU, n < 0x80U)) && implies(c >= 0xC0U, n >= 0x00U) ||
          (i == 8 && c == 0xFFU && n == 0x00U));
     @*/
     {
@@ -213,6 +213,8 @@ static size_t countHighBits( uint8_t c )
         n = (uint8_t) (( n & 0x7FU ) << 1U);
     }
 
+    //@ define_high_bit_is_high(n);
+    assert(implies(c >= 0xC0U, i >= 1));
     return i;
 }
 
@@ -339,12 +341,13 @@ ensures
 
     c.c = buf[ i ];
 
-    if( ( c.u > 0xC1U ) && ( c.u < 0xF5U ) )  // bug
+    if( ( c.u > 0xC1U ) && ( c.u < 0xF5U ) )
     {
         bitCount = countHighBits( c.u );
+        //@ assert bitCount >= 2;
         //@ define_mask(bitCount);
         //@ define_value(c.u, bitCount);
-        value = ( c.u ) & ( ( 1U << ( 7U - bitCount ) ) - 1U );
+        value = ( ( uint32_t ) c.u ) & ( ( ( uint32_t ) 1 << ( 7U - bitCount ) ) - 1U );
 
         /* The bit count is 1 greater than the number of bytes,
          * e.g., when j is 2, we skip one more byte. */
