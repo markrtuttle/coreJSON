@@ -58,7 +58,7 @@ lemma void uint8_to_char(uint8_t *i);
 
 lemma uint8_t define_high_bit_is_high(uint8_t n)
   requires 0 <= n && n <= 0xFF;
-  ensures result == (n & 0x80) && (result == 0U ? n < 0x80U : n >= 0x80U);
+  ensures result == (n & 0x80) && result == (n < 0x80U ? 0x00U : 0x80U);
 {
   Z z_n = Z_of_uint8(n);
   Z z_mask = Z_of_uint8(0x80U);
