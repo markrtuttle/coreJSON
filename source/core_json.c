@@ -198,12 +198,12 @@ static size_t countHighBits( uint8_t c )
       invariant
         ((i == 0 && n <= 0xFFU && implies(c < 0xFFU, n < 0xFFU)) && implies(c >= 0xC0U, n >= 0xC0U) ||
          (i == 1 && n <= 0xFEU && implies(c < 0xFFU, n < 0xFEU)) && implies(c >= 0xC0U, n >= 0x80U) ||
-         (i == 2 && n <= 0xFCU && implies(c < 0xFFU, n < 0xFCU)) && implies(c >= 0xC0U, n >= 0x00U) ||
-         (i == 3 && n <= 0xF8U && implies(c < 0xFFU, n < 0xF8U)) && implies(c >= 0xC0U, n >= 0x00U) ||
-         (i == 4 && n <= 0xF0U && implies(c < 0xFFU, n < 0xF0U)) && implies(c >= 0xC0U, n >= 0x00U) ||
-         (i == 5 && n <= 0xE0U && implies(c < 0xFFU, n < 0xE0U)) && implies(c >= 0xC0U, n >= 0x00U) ||
-         (i == 6 && n <= 0xC0U && implies(c < 0xFFU, n < 0xC0U)) && implies(c >= 0xC0U, n >= 0x00U) ||
-         (i == 7 && n <= 0x80U && implies(c < 0xFFU, n < 0x80U)) && implies(c >= 0xC0U, n >= 0x00U) ||
+         (i == 2 && n <= 0xFCU && implies(c < 0xFFU, n < 0xFCU)) ||
+         (i == 3 && n <= 0xF8U && implies(c < 0xFFU, n < 0xF8U)) ||
+         (i == 4 && n <= 0xF0U && implies(c < 0xFFU, n < 0xF0U)) ||
+         (i == 5 && n <= 0xE0U && implies(c < 0xFFU, n < 0xE0U)) ||
+         (i == 6 && n <= 0xC0U && implies(c < 0xFFU, n < 0xC0U)) ||
+         (i == 7 && n <= 0x80U && implies(c < 0xFFU, n < 0x80U)) ||
          (i == 8 && c == 0xFFU && n == 0x00U));
     @*/
     {
