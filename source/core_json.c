@@ -37,23 +37,6 @@
 
 /*@
 
-// Verifast treats a union as an array of chars, and when accessing a
-// union member whose type is anything other than char, you first need
-// to convert the array of chars to the desired type of chunk.
-//
-// The following lemmas are used in conjunction with a char/uint8_t
-// union called char_.  They assume that char <-> uint8_t casts do
-// nothing but change the interpretation of the eight bits stored in a
-// byte.
-
-lemma void char_to_uint8(char *c);
-  requires chars(c, 1, cons(?c_val, nil));
-  ensures integer_(c, 1, false, c_val);
-
-lemma void uint8_to_char(uint8_t *i);
-  requires integer_(i, 1, false, ?i_val);
-  ensures chars((int8_t *)i, 1, cons(i_val, nil));
-
 // Lemmas for countHighBits
 
 lemma uint8_t define_high_bit_is_high(uint8_t n)
@@ -78,7 +61,6 @@ lemma uint8_t define_low_bits_shifted_one_bit_left(uint8_t n)
 }
 
 // Lemmas for skipUTF8MultiByte
-
 
 lemma uint8_t define_mask(size_t bitCount)
   requires 0 <= bitCount && bitCount < 8;
@@ -105,7 +87,98 @@ lemma uint8_t define_value(uint8_t cu, size_t bitCount)
   return cu & mask;
 }
 
+lemma uint8_t define_mask_six(uint8_t byte)
+requires 0 <= byte && byte <= 0xFF;
+ensures (result == (byte & 0x3FU)) && 0 <= result && result <= 0x3FU;
+{
+  Z z_byte = Z_of_uint8(byte);
+  Z z_mask = Z_of_uint8(0x3FU);
+  bitand_def(byte, z_byte, 0x3FU, z_mask);
+  return byte & 0x3FU;
+}
+
+lemma uint32_t define_shift_six(uint32_t value)
+requires 0 <= value && value <= 0xFFFFFFFFU;
+ensures (result == (value << 6)) && (result == 64 * value);
+{
+  shiftleft_def(value, nat_of_int( 6 ));
+  return value << 6U;
+}
+
+// Note: While writing define_shift_six_plus_mask_six lemma, observed
+//   deleting ensures upper bound on result, time 23 sec -> 4 sec
+//   remaining -> i slows from 6 seconds to 23 seconds.
+//   reordering ensures slows from 1 second to 6 seconds.
+
+lemma uint32_t define_shift_six_plus_mask_six(uint32_t value,
+                                              uint8_t byte,
+                                              uint8_t remaining)
+requires
+  0 <= value && value <= pow_nat(2, nat_of_int(32-6*remaining)) - 1 &&
+  0 <= byte && byte <= 0xFFU &&
+  1 <= remaining && remaining <= 4;
+ensures
+  0 <= result && result <= pow_nat(2, nat_of_int(32-6*(remaining-1))) - 1 &&
+  (result == ((value << 6) | (byte & 0x3FU)));
+{
+  uint32_t high_addend = define_shift_six(value);
+  uint8_t low_addend = define_mask_six(byte);
+
+  Z z_low_addend = Z_of_uint32(low_addend);
+  Z z_high_addend = Z_of_uint32(high_addend);
+  bitor_def(high_addend, z_high_addend, low_addend, z_low_addend);
+  return high_addend | low_addend;
+}
+
+// Functions for signed<->unsigned conversion
+
+// The k-bit representation KREP of an integer INT in two's complement
+// in k bits is KREP = 2^k + INT (mod 2^k).  This representation
+//   requires -2^(k-1) <= INT <= 2^(k-1) - 1
+//   ensures 0 <= KREP <= 2^k - 1
+// Notice that
+//    KREP == INT < 0 ? 2^k + INT : INT
+// Converseley, INT = KREP - 2^k (mod 2^k) and
+//   requires 0 <= KREP <= 2^k - 1
+//   ensures -2^(k-1) <= INT <= 2^(k-1) - 1
+// Notice that
+//    INT = KREP < 2^(k-1) ? KREP : KREP - 2^k
+
+fixpoint uint8_t uint8_from_int8(int8_t n) {
+    return (uint8_t) (
+        -128 <= n && n <= 127 // n is valid int8 value
+             ? ( n < 0 ? 0x0100 + n : n ) // interpret two's complement
+             : ( 0 )                      // error
+    );
+}
+
+fixpoint int8_t int8_from_uint8(uint8_t n) {
+    return (int8_t) (
+        0x00U <= n && n <= 0xFFU // n is valid uint8 value
+             ? ( n < 0x80U ? n : n - 0x0100) // interpret two's complement
+             : ( 0 )                         // error
+    );
+}
+
+lemma uint8_t uint8_from_char(char *c);
+requires
+  character(c, ?c_val) &*&
+  -128 <= c_val && c_val <= 127;
+ensures
+  u_character((uint8_t*) c, ?u_val) &*&
+  (u_val == uint8_from_int8(c_val)) &&
+  0 <= u_val && u_val <= 0xFFU;
+
+lemma char char_from_uint8(uint8_t *c);
+requires
+  u_character(c, ?u_val) &*&
+  0 <= u_val && u_val <= 0xFFU;
+ensures
+  character((int8_t *) c, ?c_val) &*&
+  (c_val == int8_from_uint8(u_val)) &&
+  -128 <= c_val && c_val <= 127;
 @*/
+
 
 #define implies(a,b) (!(a) || (b))
 
@@ -186,9 +259,40 @@ ensures
  *
  * @return the count
  */
+#define countHighBitsTermination \
+  ((i == 0 && n <= 0xFFU) ||     \
+   (i == 1 && n <= 0xFEU) ||     \
+   (i == 2 && n <= 0xFCU) ||     \
+   (i == 3 && n <= 0xF8U) ||     \
+   (i == 4 && n <= 0xF0U) ||     \
+   (i == 5 && n <= 0xE0U) ||     \
+   (i == 6 && n <= 0xC0U) ||     \
+   (i == 7 && n <= 0x80U) ||     \
+   (i == 8 && n == 0x00U))
+
+#define countHighBitsLowerBound                                \
+  ((i == 0 && implies(c <= 0xF7U, n <= 0xF0 + 0x07U)) ||       \
+   (i == 1 && implies(c <= 0xF7U, n <= 0xE0 + 0x0EU)) ||       \
+   (i == 2 && implies(c <= 0xF7U, n <= 0xC0 + 0x1C)) ||        \
+   (i == 3 && implies(c <= 0xF7U, n <= 0x80 + 0x38)) ||        \
+   (i == 4 && implies(c <= 0xF7U, n <  0x80)) ||               \
+   (i > 4 && implies(c <= 0xF7U, i <= 4)))
+
+#define countHighBitsUpperBound                        \
+  ((i == 0 && implies(c >= 0xC0U, n >= 0xC0U)) ||      \
+   (i == 1 && implies(c >= 0xC0U, n >= 0x80U)) ||      \
+   (i > 1))
 static size_t countHighBits( uint8_t c )
-//@ requires 0 <= c && c <= 0xFFU;
-//@ ensures 0 <= result && result <= 8 && implies(c < 0xFFU, result < 8) && implies (c >= 0xC0U, result >= 2);
+/*@
+  requires
+    0x00U <= c && c <= 0xFFU;
+@*/
+/*@
+  ensures
+    0 <= result && result <= 8 &&
+    implies (c >= 0xC0U, result >= 2) &&
+    implies(c <= 0xF7U, result <= 4);
+@*/
 {
     uint8_t n = c;
     size_t i = 0;
@@ -196,15 +300,9 @@ static size_t countHighBits( uint8_t c )
     while( ( n & 0x80U ) != 0U )
     /*@
       invariant
-        ((i == 0 && n <= 0xFFU && implies(c < 0xFFU, n < 0xFFU)) && implies(c >= 0xC0U, n >= 0xC0U) ||
-         (i == 1 && n <= 0xFEU && implies(c < 0xFFU, n < 0xFEU)) && implies(c >= 0xC0U, n >= 0x80U) ||
-         (i == 2 && n <= 0xFCU && implies(c < 0xFFU, n < 0xFCU)) ||
-         (i == 3 && n <= 0xF8U && implies(c < 0xFFU, n < 0xF8U)) ||
-         (i == 4 && n <= 0xF0U && implies(c < 0xFFU, n < 0xF0U)) ||
-         (i == 5 && n <= 0xE0U && implies(c < 0xFFU, n < 0xE0U)) ||
-         (i == 6 && n <= 0xC0U && implies(c < 0xFFU, n < 0xC0U)) ||
-         (i == 7 && n <= 0x80U && implies(c < 0xFFU, n < 0x80U)) ||
-         (i == 8 && c == 0xFFU && n == 0x00U));
+        countHighBitsTermination &&
+        countHighBitsLowerBound &&
+        countHighBitsUpperBound;
     @*/
     {
         //@ define_high_bit_is_high(n);
@@ -214,7 +312,6 @@ static size_t countHighBits( uint8_t c )
     }
 
     //@ define_high_bit_is_high(n);
-    assert(implies(c >= 0xC0U, i >= 1));
     return i;
 }
 
@@ -237,7 +334,10 @@ static size_t countHighBits( uint8_t c )
  */
 static bool shortestUTF8( size_t length,
                           uint32_t value )
-//@ requires 2 <= length && length <= 4;
+/*@
+  requires
+    2 <= length && length <= 4;
+@*/
 //@ ensures true;
 {
     bool ret = false;
@@ -298,35 +398,18 @@ static bool shortestUTF8( size_t length,
 static bool skipUTF8MultiByte( const char * buf,
                                size_t * start,
                                size_t max )
-#if 0
-/*@
-requires
-  chars(buf, max, ?buf_val) &*& buf != NULL &*&
-  buf_val == cons(?c0, ?c00) &*&
-  c0 > 0 &*&
-  integer_(start, sizeof(size_t), false, ?start_val0) &*& start != NULL &*&
-    0 <= start_val0 &*& start_val0 <= max &*&
-  0 < max &*& start_val0 < max &*&
-  start_val0 < max && !isascii_( c0  );
-  @*/
-/*@
-ensures
-  chars(buf, max, buf_val) &*&
-  integer_(start, sizeof(size_t), false, ?start_val1) &*& start_val0 <= start_val1 &*& start_val1 <= max;
-  @*/
-#endif
 /*@
 requires
   buf != NULL &*& start != NULL &*& max > 0 &*&
   chars(buf, max, ?buf_val) &*&
   integer_(start, sizeof(size_t), false, ?start_val0)  &*&
   0 <= start_val0 && start_val0 < max && !isascii_(nth(start_val0, buf_val));
-  @*/
+@*/
 /*@
 ensures
   chars(buf, max, buf_val) &*&
   integer_(start, sizeof(size_t), false, ?start_val1);
-  @*/
+@*/
 {
     bool ret = false;
     size_t i, bitCount, j;
@@ -340,11 +423,12 @@ ensures
     assert( !isascii_( buf[ i ] ) );
 
     c.c = buf[ i ];
+    //@ character_limits(&c.c);
+    //@ uint8_from_char(&c.c);
 
     if( ( c.u > 0xC1U ) && ( c.u < 0xF5U ) )
     {
         bitCount = countHighBits( c.u );
-        //@ assert bitCount >= 2;
         //@ define_mask(bitCount);
         //@ define_value(c.u, bitCount);
         value = ( ( uint32_t ) c.u ) & ( ( ( uint32_t ) 1 << ( 7U - bitCount ) ) - 1U );
@@ -352,6 +436,18 @@ ensures
         /* The bit count is 1 greater than the number of bytes,
          * e.g., when j is 2, we skip one more byte. */
         for( j = bitCount - 1U; j > 0U; j-- )
+          /*@
+            invariant
+              0 <= j && j <= bitCount - 1 &&
+              0 <= i && i < max &&
+              0 <= value && value <= pow_nat(2, nat_of_int(32-6*j)) - 1 &*&
+              chars(buf, max, buf_val) &*&
+              integer_(start, sizeof(size_t), false, start_val0) &*&
+              u_character(&c.u, ?u_val) &*&
+              0 <= u_val && u_val <= 0xFFU &*&
+              chars(&c.c + 1, 0, nil);
+           @*/
+
         {
             i++;
 
@@ -360,9 +456,10 @@ ensures
                 break;
             }
 
-            //@ uint8_to_char(&c.u);
+            //@ char_from_uint8(&c.u);
             c.c = buf[ i ];
-            //@ char_to_uint8(&c.c);
+            //@ character_limits(&c.c);
+            //@ uint8_from_char(&c.c);
 
             /* Additional bytes must match 10xxxxxx. */
             if( ( c.u & 0xC0U ) != 0x80U )
@@ -370,6 +467,7 @@ ensures
                 break;
             }
 
+            //@ define_shift_six_plus_mask_six(value, c.u, j);
             value = ( value << 6U ) | ( c.u & 0x3FU );
         }
 
@@ -443,29 +541,26 @@ static uint8_t hexToInt( char c )
     if( ( c >= 'a' ) && ( c <= 'f' ) )
     {
         n.c -= 'a';
-        //@ char_to_uint8(&n.c);
+        //@ uint8_from_char(&n.c);
         n.u += 10U;
-        //@ uint8_to_char(&n.u);
     }
     else if( ( c >= 'A' ) && ( c <= 'F' ) )
     {
         n.c -= 'A';
-        //@ char_to_uint8(&n.c);
+        //@ uint8_from_char(&n.c);
         n.u += 10U;
-        //@ uint8_to_char(&n.u);
     }
     else if( isdigit_( c ) )
     {
         n.c -= '0';
+        //@ uint8_from_char(&n.c);
     }
     else
     {
-        //@ char_to_uint8(&n.c);
+        //@ uint8_from_char(&n.c);
         n.u = NOT_A_HEX_CHAR;
-        //@ uint8_to_char(&n.u);
     }
 
-    //@ char_to_uint8(&n.c);
     return n.u;
 }
 

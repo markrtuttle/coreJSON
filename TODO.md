@@ -1,7 +1,7 @@
 D    skipSpace
 D    countHighBits
-     shortestUTF8
-I    skipUTF8MultiByte
+D    shortestUTF8
+D    skipUTF8MultiByte
 I*   skipUTF8
 D    hexToInt
 D    skipOneHexEscape
