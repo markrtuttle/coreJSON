@@ -408,7 +408,8 @@ requires
 /*@
 ensures
   chars(buf, max, buf_val) &*&
-  integer_(start, sizeof(size_t), false, ?start_val1);
+  integer_(start, sizeof(size_t), false, ?start_val1) &*&
+  start_val0 <= start_val1 && start_val1 <= max && implies(result, start_val0 < start_val1);
 @*/
 {
     bool ret = false;
@@ -439,7 +440,7 @@ ensures
           /*@
             invariant
               0 <= j && j <= bitCount - 1 &&
-              0 <= i && i < max &&
+              start_val0 <= i && i < max &&
               0 <= value && value <= pow_nat(2, nat_of_int(32-6*j)) - 1 &*&
               chars(buf, max, buf_val) &*&
               integer_(start, sizeof(size_t), false, start_val0) &*&
