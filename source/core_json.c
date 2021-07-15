@@ -495,9 +495,19 @@ ensures
 static bool skipUTF8( const char * buf,
                       size_t * start,
                       size_t max )
-//@ requires true;
-//@ ensures true;
-#if 0
+/*@
+requires
+  buf != NULL &*& start != NULL &*& max > 0 &*&
+  chars(buf, max, ?buf_val) &*&
+  integer_(start, sizeof(size_t), false, ?start_val0)  &*&
+  0 <= start_val0 && start_val0 < max;
+@*/
+/*@
+ensures
+  chars(buf, max, buf_val) &*&
+  integer_(start, sizeof(size_t), false, ?start_val1) &*&
+  start_val0 <= start_val1 && start_val1 <= max && implies(result, start_val0 < start_val1);
+@*/
 {
     bool ret = false;
 
@@ -517,10 +527,6 @@ static bool skipUTF8( const char * buf,
     }
 
     return ret;
-}
-#endif
-{
-  return true;
 }
 
 /**
@@ -837,6 +843,7 @@ ensures
 {
     bool ret = false;
     size_t i;
+    //@ assume(&i != NULL);
 
     assert( ( buf != NULL ) && ( start != NULL ) && ( max > 0U ) );
 
@@ -858,7 +865,6 @@ ensures
 
             if( buf[ i ] == '\\' )
             {
-              //@ assume(&i != NULL);
                 if( skipEscape( buf, &i, max ) != true )
                 {
                     break;
