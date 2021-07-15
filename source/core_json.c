@@ -239,7 +239,9 @@ ensures
     for( i = *start; i < max; i++ )
     /*@ invariant
           chars(buf, max, buf_val) &*&
-          start_val0 <= i && implies(start_val0 < max, i <= max);
+          integer_(start, sizeof(size_t), false, start_val0) &*&
+          integer_(&i, sizeof(size_t), false, ?i_val) &*&
+          start_val0 <= i_val && implies(start_val0 < max, i_val <= max);
     @*/
     {
         if( !isspace_( buf[ i ] ) )
@@ -247,7 +249,6 @@ ensures
             break;
         }
     }
-
     *start = i;
 }
 
@@ -500,13 +501,13 @@ requires
   buf != NULL &*& start != NULL &*& max > 0 &*&
   chars(buf, max, ?buf_val) &*&
   integer_(start, sizeof(size_t), false, ?start_val0)  &*&
-  0 <= start_val0 && start_val0 < max;
+  0 <= start_val0;
 @*/
 /*@
 ensures
   chars(buf, max, buf_val) &*&
   integer_(start, sizeof(size_t), false, ?start_val1) &*&
-  start_val0 <= start_val1 && start_val1 <= max && implies(result, start_val0 < start_val1);
+  start_val0 <= start_val1 && implies(start_val0 < max, start_val1 <= max) && implies(result, start_val0 < start_val1);
 @*/
 {
     bool ret = false;
@@ -757,7 +758,7 @@ requires
 ensures
   chars(buf, max, buf_val) &*&
   integer_(start, sizeof(size_t), false, ?start_val1) &*&
-  start_val0 <= start_val1 && implies(result, start_val1 <= max);
+  start_val0 <= start_val1 && implies(start_val0 < max, start_val1 <= max);
   @*/
 {
     bool ret = false;
@@ -838,7 +839,7 @@ requires
 ensures
   chars(buf, max, buf_val) &*&
   integer_(start, sizeof(size_t), false, ?start_val1) &*&
-  start_val0 <= start_val1 && implies(result, start_val0 < start_val1);
+  start_val0 <= start_val1 && implies(start_val0 < max, start_val1 <= max) && implies(result, start_val0 < start_val1);
   @*/
 {
     bool ret = false;
@@ -854,7 +855,7 @@ ensures
         i++;
 
         while( i < max )
-        //@ invariant chars(buf, max, buf_val) &*& u_integer(&i, ?ival) &*& start_val0 <= ival;
+        //@ invariant chars(buf, max, buf_val) &*& u_integer(&i, ?i_val) &*& start_val0 <= i_val && i_val <= max;
         {
             if( buf[ i ] == '"' )
             {
@@ -1755,9 +1756,9 @@ requires
 ensures
   chars(buf, max, buf_val) &*&
   integer_(start, sizeof(size_t), false, ?start_val1) &*&
-  integer_(value, sizeof(size_t), false, _) &*&
-  integer_(valueLength, sizeof(size_t), false, _) &*&
-  start_val0 <= start_val1 && implies(result, start_val0 < start_val1);
+  integer_(value, sizeof(size_t), false, ?value_val1) &*&
+  integer_(valueLength, sizeof(size_t), false, ?valueLength_val1) &*&
+  start_val0 <= start_val1 && implies(start_val0 < max, start_val1 <= max) && implies(result, start_val0 < start_val1);
   @*/
 {
     bool ret = true;
@@ -1960,7 +1961,7 @@ static bool arraySearch( const char * buf,
 /*@
 requires
   buf != NULL && outValue != NULL && outValueLength != NULL &*&
-  max > 0 &*& // bug?
+  max > 0 &*& // Asserted by skipSpace
   chars(buf, max, ?buf_val) &*&
   integer_(outValue, sizeof(size_t), false, ?outvalue) &*&
   integer_(outValueLength, sizeof(size_t), false, ?outvaluelength);
@@ -1968,8 +1969,8 @@ requires
 /*@
 ensures
   chars(buf, max, buf_val) &*&
-  integer_(outValue, sizeof(size_t), false, _) &*&
-  integer_(outValueLength, sizeof(size_t), false, _);
+  integer_(outValue, sizeof(size_t), false, ?outValue_val) &*&
+  integer_(outValueLength, sizeof(size_t), false, ?outValueLength_val);
   @*/
 {
     bool ret = false;
@@ -1993,8 +1994,8 @@ ensures
           /*@ invariant
               chars(buf, max, buf_val) &*&
               u_integer(&i, ?ival) &*&
-              u_integer(&value, _) &*&
-              u_integer(&valueLength, _) &*&
+              u_integer(&value, ?value_val) &*&
+              u_integer(&valueLength, ?valueLength_val) &*&
               0 <= ival && currentIndex <= queryIndex;
           @*/
 
@@ -2099,16 +2100,14 @@ static JSONStatus_t multiSearch( const char * buf,
                                  size_t queryLength,
                                  size_t * outValue,
                                  size_t * outValueLength )
-#if 0
 /*@
 requires
-  chars(buf, max, ?buf_val) &*& buf != NULL &*&
-  0 < max &*&
-  chars(query, max, ?query_val) &*& query != NULL &*&
-  0 < queryLength &*&
-  queryLength <= max &*&
-  integer_(outValue, sizeof(size_t), false, ?outvalue) &*& outValue != NULL &*&
-  integer_(outValueLength, sizeof(size_t), false, ?outvaluelength) &*& outValueLength != NULL;
+  buf != NULL && query != NULL && outValue != NULL && outValueLength != NULL &&
+  0 < max && 0 < queryLength && queryLength <= max &*&
+  chars(buf, max, ?buf_val) &*&
+  chars(query, max, ?query_val) &*&
+  integer_(outValue, sizeof(size_t), false, ?outvalue) &*&
+  integer_(outValueLength, sizeof(size_t), false, ?outvaluelength);
   @*/
 /*@
 ensures
@@ -2117,11 +2116,12 @@ ensures
   integer_(outValue, sizeof(size_t), false, _) &*&
   integer_(outValueLength, sizeof(size_t), false, _);
   @*/
-#endif
 {
     JSONStatus_t ret = JSONSuccess;
     size_t i = 0, start = 0, queryStart = 0, value = 0, length = max;
     //@ assume(&i != NULL);
+    //@ assume(&value != NULL);
+    //@ assume(&length != NULL);
 
     assert( ( buf != NULL ) && ( query != NULL ) );
     assert( ( outValue != NULL ) && ( outValueLength != NULL ) );
@@ -2132,8 +2132,9 @@ ensures
       /*@ invariant
         chars(buf, max, buf_val) &*&
         chars(query, max, query_val) &*&
-        integer_(&i, sizeof(size_t), false, ?ival) &*& 0 <= ival &*& ival <= queryLength &*&
-        integer_(&length, sizeof(size_t), false, ?length_val) &*& 0 <= length_val &*& length_val <= max &*&
+        integer_(&i, sizeof(size_t), false, ?i_val) &*& 0 <= i_val &*& i_val <= queryLength &*&
+        integer_(&value, sizeof(size_t), false, ?value_val) &*&
+        integer_(&length, sizeof(size_t), false, ?length_val) &*& 0 < length_val &*& length_val <= max &*&
         start < max;
       @*/
     {
@@ -2157,9 +2158,9 @@ ensures
             i++;
 
             //@ chars_split(buf, start);
-            //@ chars_split(buf + start, length);
-            found = arraySearch( &buf[ start ], length, ( uint32_t ) queryIndex, &value, &length );
-            //@ chars_join(buf, start);
+            // bug?
+            found = arraySearch( &buf[ start ], max - start, ( uint32_t ) queryIndex, &value, &length );
+            //@ chars_join(buf);
         }
         else
         {
