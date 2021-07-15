@@ -230,7 +230,7 @@ requires
 ensures
   chars(buf, max, buf_val) &*&
   integer_(start, sizeof(size_t), false, ?start_val1) &*&
-  start_val0 <= start_val1 && implies(start_val0 < max, start_val1 <= max);
+  start_val0 <= start_val1 && implies(start_val0 <= max, start_val1 <= max);
   @*/
 {
     size_t i;
@@ -241,7 +241,7 @@ ensures
           chars(buf, max, buf_val) &*&
           integer_(start, sizeof(size_t), false, start_val0) &*&
           integer_(&i, sizeof(size_t), false, ?i_val) &*&
-          start_val0 <= i_val && implies(start_val0 < max, i_val <= max);
+          start_val0 <= i_val && implies(start_val0 <= max, i_val <= max);
     @*/
     {
         if( !isspace_( buf[ i ] ) )
@@ -839,7 +839,7 @@ requires
 ensures
   chars(buf, max, buf_val) &*&
   integer_(start, sizeof(size_t), false, ?start_val1) &*&
-  start_val0 <= start_val1 && implies(start_val0 < max, start_val1 <= max) && implies(result, start_val0 < start_val1);
+  (result ? start_val0 < start_val1 && start_val1 <= max : start_val0 == start_val1);
   @*/
 {
     bool ret = false;
@@ -964,7 +964,7 @@ ensures
   chars(buf, max, buf_val) &*&
   integer_(start, sizeof(size_t), false, ?start_val1) &*&
   chars(literal, length, literal_val) &*&
-  start_val0 <= start_val1 && implies(result, length == 0 || start_val0 < start_val1);
+  (result ? start_val1 == start_val0 + length && start_val1 <= max : start_val0 == start_val1);
   @*/
 {
     bool ret = false;
@@ -1015,7 +1015,7 @@ requires
 ensures
   chars(buf, max, buf_val) &*&
   integer_(start, sizeof(size_t), false, ?start_val1) &*&
-  start_val0 <= start_val1 && implies(result, start_val0 < start_val1);
+  (result ? start_val0 < start_val1 && start_val1 <= max : start_val0 == start_val1);
   @*/
 {
     bool ret = false;
@@ -1067,13 +1067,20 @@ static bool skipDigits( const char * buf,
   buf != NULL && start != NULL && max > 0 &*&
   chars(buf, max, ?buf_val) &*&
   integer_(start, sizeof(size_t), false, ?start_val0) &*&
-  (outValue != NULL ? integer_(outValue, sizeof(int32_t), true, ?outvalue0) &*& outvalue0 <= INT_MAX : true); // FIXME: remove INT_MAX?
+  // FIXME: remove INT_MAX? or use implies?
+  (outValue != NULL ?
+    integer_(outValue, sizeof(int32_t), true, ?outvalue0) &*& outvalue0 <= INT_MAX :
+    true);
   @*/
 /*@ ensures
   chars(buf, max, buf_val) &*&
   integer_(start, sizeof(size_t), false, ?start_val1) &*&
-  (outValue != NULL ? integer_(outValue, sizeof(int32_t), true, ?outvalue1) &*& outvalue1 <= INT_MAX : true) &*& // FIXME: remove INT_MAX?
-  start_val0 <= start_val1 && implies(result, start_val0 < start_val1);
+  // FIXME: remove INT_MAX?  or use implies?
+  (outValue != NULL ?
+    integer_(outValue, sizeof(int32_t), true, ?outvalue1) &*& outvalue1 <= INT_MAX :
+    true) &*&
+  // start_val0 <= start_val1 && implies(start_val0 < max, start_val1 <= max) &&
+  (result ? start_val0 < start_val1 && start_val1 <= max : start_val0 == start_val1);
   @*/
 
 {
@@ -1086,7 +1093,13 @@ static bool skipDigits( const char * buf,
     saveStart = *start;
 
     for( i = *start; i < max; i++ )
-    //@ invariant chars(buf, max, buf_val) &*& start_val0 <= i &*&  value <= INT_MAX;
+    /*@
+      invariant
+        chars(buf, max, buf_val) &*&
+        start_val0 <= i  && implies(start_val0 < max, i <= max) &&
+        implies(start_val0 < i, start_val0 < max) &&
+        value <= INT_MAX;
+    @*/
     {
         if( !isdigit_( buf[ i ] ) )
         {
@@ -1143,10 +1156,11 @@ requires
 ensures
   chars(buf, max, buffer) &*&
   integer_(start, sizeof(size_t), false, ?start_val1) &*&
-  start_val0 <= start_val1;
+  (start_val0 < max ? start_val0 <= start_val1 && start_val1 <= max : start_val0 == start_val1);
   @*/
 {
     size_t i;
+    //@ assume (&i != 0);
 
     assert( ( buf != NULL ) && ( start != NULL ) && ( max > 0U ) );
 
@@ -1156,7 +1170,6 @@ ensures
     {
         i++;
 
-        //@ assume (&i != 0);
         if( skipDigits( buf, &i, max, NULL ) == true )
         {
             *start = i;
@@ -1185,7 +1198,7 @@ requires
 ensures
   chars(buf, max, buffer) &*&
   integer_(start, sizeof(size_t), false, ?start_val1) &*&
-  start_val0 <= start_val1;
+  (start_val0 < max ? start_val0 <= start_val1 && start_val1 <= max : start_val0 == start_val1);
   @*/
 {
     size_t i;
@@ -1235,7 +1248,7 @@ requires
 ensures
   chars(buf, max, buf_val) &*&
   integer_(start, sizeof(size_t), false, ?start_val1) &*&
-  start_val0 <= start_val1 && implies(result, start_val0 < start_val1);
+  (result ? start_val0 < start_val1 && start_val1 <= max : start_val0 == start_val1);
   @*/
 {
     bool ret = false;
@@ -1306,7 +1319,7 @@ requires
 ensures
   chars(buf, max, buf_val) &*&
   integer_(start, sizeof(size_t), false, ?start_val1) &*&
-  start_val0 <= start_val1 && implies(result, start_val0 < start_val1);
+  (result ? start_val0 < start_val1 && start_val1 <= max : start_val0 == start_val1);
   @*/
 {
     bool ret = false;
@@ -1349,7 +1362,9 @@ requires
 ensures
   chars(buf, max, buf_val) &*&
   integer_(start, sizeof(size_t), false, ?start_val1) &*&
-  start_val0 <= start_val1 && implies(result, start_val0 < start_val1);
+  (result ?
+    (start_val0 < start_val1 && start_val1 <= max) :
+    (start_val0 <= start_val1 && implies(start_val0 <= max, start_val1 <= max)));
   @*/
 {
     bool ret = false;
@@ -1399,7 +1414,7 @@ requires
 ensures
   chars(buf, max, buf_val) &*&
   integer_(start, sizeof(size_t), false, ?start_val1) &*&
-  start_val0 <= start_val1;
+  (start_val0 <= max ? start_val0 <= start_val1 && start_val1 <= max : start_val0 <= start_val1);
   @*/
 {
     size_t i;
@@ -1410,7 +1425,12 @@ ensures
     //@ assume(&i != NULL);
 
     while( i < max )
-          //@ invariant chars(buf, max, buf_val) &*& u_integer(&i, ?ival) &*& start_val0 <= ival;
+      /*@
+       invariant
+         chars(buf, max, buf_val) &*&
+         u_integer(&i, ?i_val) &*&
+         start_val0 <= i_val && implies(start_val0 <= max, i_val <= max);
+      @*/
     {
         if( skipAnyScalar( buf, &i, max ) != true )
         {
